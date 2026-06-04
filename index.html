@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Eatshimo" />
+  <meta name="theme-color" content="#2c313a" />
+  <meta name="description" content="An open-source lightweight calorie tracker" />
+  <!-- Apple touch icons -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <!-- Splash screen color -->
+  <meta name="msapplication-TileColor" content="#2c313a" />
+  <title>Eatshimo</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <div class="logo">EATSHIMO</div>
+      <p class="tagline">An open-source lightweight calorie tracker by <a href="https://neushimo.com" target="_blank">neushimo.com</a></p>
+    </div>
+    <nav>
+      <button class="nav-tab active" onclick="showPage('library', this)">Food Library</button>
+      <button class="nav-tab" onclick="showPage('daily', this)">Daily Log</button>
+      <button class="nav-tab" onclick="showPage('profile', this)">Profile</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ══════════ FOOD LIBRARY PAGE ══════════ -->
+    <div class="page active" id="page-library">
+      <section class="card" id="add-section">
+        <h2>Add Food</h2>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="food-name">Food Name</label>
+            <div style="display:flex;gap:8px;align-items:stretch;">
+              <input type="text" id="food-name" placeholder="e.g. Chicken Breast" style="flex:1;" />
+              <button type="button" class="btn-ai-estimate" onclick="openAIEstimate()">Ask AI</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="food-grams">Serving Size (g)</label>
+            <input type="number" id="food-grams" placeholder="e.g. 100" min="1" />
+          </div>
+          <div class="field">
+            <label for="food-calories">Calories (kcal)</label>
+            <input type="number" id="food-calories" placeholder="e.g. 165" min="0" />
+          </div>
+          <div class="field">
+            <label for="food-protein">Protein (g)</label>
+            <input type="number" id="food-protein" placeholder="e.g. 31" min="0" />
+          </div>
+          <div class="field">
+            <label for="food-carbs">Carbs (g)</label>
+            <input type="number" id="food-carbs" placeholder="e.g. 0" min="0" />
+          </div>
+          <div class="field">
+            <label for="food-fat">Fat (g)</label>
+            <input type="number" id="food-fat" placeholder="e.g. 3.6" min="0" />
+          </div>
+          <div class="field">
+            <label for="food-fiber">Fiber (g)</label>
+            <input type="number" id="food-fiber" placeholder="e.g. 2" min="0" />
+          </div>
+        </div>
+        <button id="save-btn" onclick="saveFood()">Save Food</button>
+      </section>
+
+      <section class="card" id="library-section">
+        <div class="library-header">
+          <h2>Food Library</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn-presets" onclick="togglePresets()">+ Presets</button>
+            <input type="text" id="search-input" placeholder="Search..." oninput="renderLibrary()" />
+          </div>
+        </div>
+        <div id="preset-panel" class="hidden">
+          <div class="preset-tabs">
+            <button class="preset-tab active" onclick="switchTab('common')">Common Foods</button>
+            <button class="preset-tab" onclick="switchTab('filipino')">Filipino Foods</button>
+          </div>
+          <div id="preset-list" class="preset-list"></div>
+        </div>
+        <div id="food-list">
+          <p class="empty-msg">No foods saved yet. Add one above or use Presets!</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ══════════ DAILY LOG PAGE ══════════ -->
+    <div class="page" id="page-daily">
+      <section class="card">
+        <div class="date-nav">
+          <button onclick="changeDate(-1)">‹</button>
+          <div id="current-date" onclick="openCalendar()" style="cursor:pointer;"></div>
+          <button onclick="changeDate(1)">›</button>
+        </div>
+        <div class="date-actions">
+          <button class="btn-edit-goal" onclick="openCalendar()">Pick Date</button>
+          <button class="btn-edit-goal" onclick="goToToday()">Go to Today</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+          <h2 style="margin-bottom:0;">Today's Summary</h2>
+          <button class="btn-edit-goal" onclick="editCalorieGoal()">Edit Goal</button>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-stat"><span class="stat-val" id="sum-calories">0</span><span class="stat-label">Eaten kcal</span></div>
+          <div class="summary-stat"><span class="stat-val" id="sum-protein">0g</span><span class="stat-label">Protein</span></div>
+          <div class="summary-stat"><span class="stat-val" id="sum-carbs">0g</span><span class="stat-label">Carbs</span></div>
+          <div class="summary-stat"><span class="stat-val" id="sum-fat">0g</span><span class="stat-label">Fat</span></div>
+        </div>
+        <div class="calorie-bar-wrap"><div class="calorie-bar" id="calorie-bar" style="width:0%"></div></div>
+        <div class="calorie-label" id="calorie-label">Set your calorie target</div>
+      </section>
+
+      <section class="card">
+        <div class="log-header">
+          <h2>Meals</h2>
+          <button class="btn-log-food" onclick="openLogModal()">+ Add Meal</button>
+        </div>
+        <div id="meal-list"><p class="empty-msg">No meals logged yet today.</p></div>
+      </section>
+
+      <section class="card">
+        <h2>Daily Extras</h2>
+        <div class="extras-grid">
+          <div class="extra-card">
+            <span class="extra-label">Water</span>
+            <span class="extra-val" id="water-val">0</span>
+            <span class="extra-unit">ml today</span>
+            <input type="number" id="water-input" placeholder="e.g. 250" min="0" />
+            <button onclick="logWater()">+ Add</button>
+            <button class="btn-clear-water" onclick="clearWater()">Clear</button>
+          </div>
+          <div class="extra-card">
+            <span class="extra-label">Steps</span>
+            <span class="extra-val" id="steps-val">0</span>
+            <span class="extra-unit">steps today</span>
+            <span class="steps-burned" id="steps-burned"></span>
+            <input type="number" id="steps-input" placeholder="e.g. 1000" min="0" />
+            <button onclick="logSteps()">Set</button>
+            <button class="btn-clear-water" onclick="clearSteps()">Clear</button>
+          </div>
+          <div class="extra-card">
+            <span class="extra-label">Weight</span>
+            <span class="extra-val" id="weight-val">—</span>
+            <span class="extra-unit">kg (optional)</span>
+            <input type="number" id="weight-input" placeholder="e.g. 70.5" min="0" step="0.1" />
+            <button onclick="logWeight()">Log</button>
+            <button class="btn-clear-water" onclick="clearWeight()">Clear</button>
+          </div>
+          <div class="extra-card">
+            <span class="extra-label">Sleep</span>
+            <span class="extra-val" id="sleep-val">—</span>
+            <span class="extra-unit">hrs last night</span>
+            <input type="number" id="sleep-input" placeholder="e.g. 7.5" min="0" max="24" step="0.5" />
+            <button onclick="logSleep()">Log</button>
+            <button class="btn-clear-water" onclick="clearSleep()">Clear</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ══════════ PROFILE PAGE ══════════ -->
+    <div class="page" id="page-profile">
+      <section class="card">
+        <h2>Your Profile</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label>Gender</label>
+            <select id="prof-gender">
+              <option value="">Select...</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Age</label>
+            <input type="number" id="prof-age" placeholder="e.g. 25" min="1" max="120" />
+          </div>
+          <div class="field">
+            <label>Height (cm)</label>
+            <input type="number" id="prof-height" placeholder="e.g. 170" min="50" />
+          </div>
+          <div class="field">
+            <label>Weight (kg)</label>
+            <input type="number" id="prof-weight" placeholder="e.g. 70" min="1" step="0.1" />
+          </div>
+          <div class="field full">
+            <label>Activity Level</label>
+            <select id="prof-activity">
+              <option value="1.2">Sedentary (little or no exercise)</option>
+              <option value="1.375">Lightly active (1–3 days/week)</option>
+              <option value="1.55">Moderately active (3–5 days/week)</option>
+              <option value="1.725">Very active (6–7 days/week)</option>
+              <option value="1.9">Extra active (physical job + exercise)</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Time Zone</label>
+            <select id="prof-timezone">
+              <option value="Asia/Manila">Philippines (Asia/Manila) — Default</option>
+              <option value="Asia/Singapore">Singapore (Asia/Singapore)</option>
+              <option value="Asia/Kuala_Lumpur">Malaysia (Asia/Kuala_Lumpur)</option>
+              <option value="Asia/Jakarta">Indonesia — WIB (Asia/Jakarta)</option>
+              <option value="Asia/Makassar">Indonesia — WITA (Asia/Makassar)</option>
+              <option value="Asia/Jayapura">Indonesia — WIT (Asia/Jayapura)</option>
+              <option value="Asia/Bangkok">Thailand (Asia/Bangkok)</option>
+              <option value="Asia/Ho_Chi_Minh">Vietnam (Asia/Ho_Chi_Minh)</option>
+              <option value="Asia/Tokyo">Japan (Asia/Tokyo)</option>
+              <option value="Asia/Seoul">South Korea (Asia/Seoul)</option>
+              <option value="Asia/Shanghai">China (Asia/Shanghai)</option>
+              <option value="Asia/Kolkata">India (Asia/Kolkata)</option>
+              <option value="Asia/Dubai">UAE (Asia/Dubai)</option>
+              <option value="Europe/London">UK (Europe/London)</option>
+              <option value="Europe/Paris">Central Europe (Europe/Paris)</option>
+              <option value="America/New_York">US Eastern (America/New_York)</option>
+              <option value="America/Chicago">US Central (America/Chicago)</option>
+              <option value="America/Denver">US Mountain (America/Denver)</option>
+              <option value="America/Los_Angeles">US Pacific (America/Los_Angeles)</option>
+              <option value="America/Sao_Paulo">Brazil (America/Sao_Paulo)</option>
+              <option value="Australia/Sydney">Australia Eastern (Australia/Sydney)</option>
+              <option value="Pacific/Auckland">New Zealand (Pacific/Auckland)</option>
+              <option value="UTC">UTC</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-divider">Calorie Goal <span>(optional)</span></div>
+        <div class="calorie-goal-row">
+          <input type="number" id="prof-calorie-goal" placeholder="e.g. 2000" min="0" />
+          <button onclick="saveCalorieGoalFromProfile()">Set Goal</button>
+        </div>
+        <div id="prof-calorie-goal-display" style="font-size:12px;color:var(--text-dim);margin-bottom:12px;font-style:italic;"></div>
+        <div class="section-divider">Macro Goals <span>(optional)</span></div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Protein Goal (g)</label>
+            <input type="number" id="prof-protein-goal" placeholder="e.g. 150" min="0" />
+          </div>
+          <div class="field">
+            <label>Carbs Goal (g)</label>
+            <input type="number" id="prof-carbs-goal" placeholder="e.g. 200" min="0" />
+          </div>
+          <div class="field">
+            <label>Fat Goal (g)</label>
+            <input type="number" id="prof-fat-goal" placeholder="e.g. 60" min="0" />
+          </div>
+        </div>
+        <button onclick="saveProfile()">Save Profile</button>
+      </section>
+
+      <section class="card" id="tdee-card" style="display:none;">
+        <h2>Calorie Targets</h2>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Based on your profile using the Mifflin-St Jeor equation.</p>
+        <div class="tdee-grid">
+          <div class="tdee-box tdee-loss">
+            <div class="tdee-label">Weight Loss</div>
+            <div class="tdee-val" id="tdee-loss">—</div>
+            <div class="tdee-sub">kcal/day (−500)</div>
+            <button class="btn-tdee-set" onclick="setTDEEGoal('loss')">Set as Goal</button>
+          </div>
+          <div class="tdee-box tdee-maintain">
+            <div class="tdee-label">Maintain</div>
+            <div class="tdee-val" id="tdee-maintain">—</div>
+            <div class="tdee-sub">kcal/day (TDEE)</div>
+            <button class="btn-tdee-set" onclick="setTDEEGoal('maintain')">Set as Goal</button>
+          </div>
+          <div class="tdee-box tdee-gain">
+            <div class="tdee-label">Weight Gain</div>
+            <div class="tdee-val" id="tdee-gain">—</div>
+            <div class="tdee-sub">kcal/day (+500)</div>
+            <button class="btn-tdee-set" onclick="setTDEEGoal('gain')">Set as Goal</button>
+          </div>
+        </div>
+        <div class="tdee-current" id="tdee-current-goal"></div>
+      </section>
+
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin-bottom:0;">Trends</h2>
+          <div class="chart-period-tabs">
+            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
+            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
+            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
+          </div>
+        </div>
+        <div class="chart-section"><div class="chart-title">Calories</div><div class="chart-wrap"><canvas id="chart-calories"></canvas></div></div>
+        <div class="chart-section"><div class="chart-title">Macros (Protein / Carbs / Fat)</div><div class="chart-wrap"><canvas id="chart-macros"></canvas></div></div>
+        <div class="chart-section"><div class="chart-title">Weight (kg)</div><div class="chart-wrap"><canvas id="chart-weight"></canvas></div></div>
+        <div class="chart-section"><div class="chart-title">Water (ml)</div><div class="chart-wrap"><canvas id="chart-water"></canvas></div></div>
+        <div class="chart-section"><div class="chart-title">Steps</div><div class="chart-wrap"><canvas id="chart-steps"></canvas></div></div>
+        <div class="chart-section"><div class="chart-title">Sleep (hrs)</div><div class="chart-wrap"><canvas id="chart-sleep"></canvas></div></div>
+      </section>
+
+      <section class="card">
+        <h2>Import / Export Data</h2>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;">Export your daily logs as a CSV file, or import from a previously exported file.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="exportCSV()" style="flex:1;min-width:120px;">Export CSV</button>
+          <button class="btn-secondary" onclick="document.getElementById('csv-import').click()" style="flex:1;min-width:120px;">Import CSV</button>
+          <input type="file" id="csv-import" accept=".csv" style="display:none;" onchange="importCSV(event)" />
+        </div>
+        <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--text-dim);"></div>
+      </section>
+
+      <section class="card card-danger">
+        <h2>Danger Zone</h2>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;">Permanently delete all your logged data, food library, and profile. This cannot be undone.</p>
+        <button class="btn-danger-full" onclick="deleteAllData()">Delete All Data</button>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM NAV (mobile only) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bottom-nav-btn active" id="bnav-library" onclick="showPage('library', null, 'library')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Library
+    </button>
+    <button class="bottom-nav-btn" id="bnav-daily" onclick="showPage('daily', null, 'daily')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Daily Log
+    </button>
+    <button class="bottom-nav-btn" id="bnav-profile" onclick="showPage('profile', null, 'profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </button>
+  </nav>
+
+
+  <!-- EDIT FOOD MODAL -->
+  <div id="modal-overlay" class="hidden" onclick="closeModal(event)">
+    <div class="modal">
+      <h2>Edit Food</h2>
+      <input type="hidden" id="edit-index" />
+      <div class="form-grid">
+        <div class="field full"><label>Food Name</label><input type="text" id="edit-name" /></div>
+        <div class="field"><label>Serving Size (g)</label><input type="number" id="edit-grams" min="1" /></div>
+        <div class="field"><label>Calories (kcal)</label><input type="number" id="edit-calories" min="0" /></div>
+        <div class="field"><label>Protein (g)</label><input type="number" id="edit-protein" min="0" /></div>
+        <div class="field"><label>Carbs (g)</label><input type="number" id="edit-carbs" min="0" /></div>
+        <div class="field"><label>Fat (g)</label><input type="number" id="edit-fat" min="0" /></div>
+        <div class="field"><label>Fiber (g)</label><input type="number" id="edit-fiber" min="0" /></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModalDirect()">Cancel</button>
+        <button onclick="updateFood()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG MEAL MODAL -->
+  <div id="log-modal-overlay" class="hidden" onclick="closeLogModal(event)">
+    <div class="modal">
+      <h2>Log a Meal</h2>
+      <input type="text" id="log-search" placeholder="Search foods..." oninput="renderLogFoodList(this.value)" style="margin-bottom:10px;" />
+      <div class="food-pick-list" id="food-pick-list"></div>
+      <div class="grams-row">
+        <label>Grams eaten</label>
+        <input type="number" id="log-grams" placeholder="e.g. 150" min="1" oninput="updateMacroPreview()" />
+      </div>
+      <div class="macro-preview" id="macro-preview">Pick a food to see scaled macros</div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeLogModalDirect()">Cancel</button>
+        <button onclick="confirmLogMeal()">Log Meal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MEAL MODAL -->
+  <div id="edit-meal-overlay" class="hidden" onclick="closeEditMealModal(event)">
+    <div class="modal">
+      <h2>Edit Logged Meal</h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Changes only apply to this day's log. Your food library is not affected.</p>
+      <input type="hidden" id="edit-meal-index" />
+      <div class="form-grid">
+        <div class="field full"><label>Food Name</label><input type="text" id="edit-meal-name" readonly style="opacity:0.6;cursor:not-allowed;" /></div>
+        <div class="field"><label>Grams</label><input type="number" id="edit-meal-grams" min="1" /></div>
+        <div class="field"><label>Calories (kcal)</label><input type="number" id="edit-meal-calories" min="0" /></div>
+        <div class="field"><label>Protein (g)</label><input type="number" id="edit-meal-protein" min="0" /></div>
+        <div class="field"><label>Carbs (g)</label><input type="number" id="edit-meal-carbs" min="0" /></div>
+        <div class="field"><label>Fat (g)</label><input type="number" id="edit-meal-fat" min="0" /></div>
+        <div class="field"><label>Fiber (g)</label><input type="number" id="edit-meal-fiber" min="0" /></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeEditMealModalDirect()">Cancel</button>
+        <button onclick="saveEditedMeal()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR MODAL -->
+  <div id="cal-overlay" class="hidden" onclick="closeCalendar(event)">
+    <div class="cal-modal">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calPrevMonth()">‹</button>
+        <span id="cal-month-label"></span>
+        <button class="cal-nav" onclick="calNextMonth()">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div style="text-align:center;margin-top:14px;">
+        <button class="btn-secondary" onclick="closeCalendarDirect()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TUTORIAL MODAL -->
+  <div id="tutorial-overlay" class="hidden" onclick="closeTutorial(event)">
+    <div class="tutorial-modal">
+      <div class="tutorial-steps">
+        <div class="tutorial-step active" id="tut-step-0">
+          <h3>Food Library</h3>
+          <p>Log your meals and food calories, and optionally macros including protein, carbohydrates, fat, and even fiber.</p>
+          <p style="margin-top:10px;">Explore our Presets for common foods and Filipino dishes to quickly build your food library.</p>
+        </div>
+        <div class="tutorial-step" id="tut-step-1">
+          <h3>Daily Logger</h3>
+          <p>Log your daily meals, water intake, steps, sleep, and weight.</p>
+          <p style="margin-top:10px;">We know not all meals are built the same — when you add less meat or use different vegetable sizes, you can edit the grams, calories, and macros individually for each logged meal without affecting your food library.</p>
+        </div>
+        <div class="tutorial-step" id="tut-step-2">
+          <h3>Profile</h3>
+          <p>Enter your gender, height, and current weight to get calorie target suggestions for weight loss, gain, or maintenance. You can also set daily goals for your macros.</p>
+          <p style="margin-top:10px;">All data is stored locally on your device. Export or import your profile, food library, and meal logs as a CSV file to transfer or back up your data.</p>
+        </div>
+      </div>
+      <div class="tutorial-dots">
+        <span class="tut-dot active" onclick="goToStep(0)"></span>
+        <span class="tut-dot" onclick="goToStep(1)"></span>
+        <span class="tut-dot" onclick="goToStep(2)"></span>
+      </div>
+      <div class="tutorial-actions">
+        <button class="btn-secondary" id="tut-prev" onclick="tutNav(-1)" style="visibility:hidden;">Back</button>
+        <button id="tut-next" onclick="tutNav(1)">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP BUTTON -->
+  <button class="help-btn" onclick="openTutorial()">?</button>
+
+  <script src="script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW error:', err));
+      });
+    }
+  </script>
+  <footer>
+    <p>©2026 Neo Antonio</p>
+    <p>All rights reserved.</p>
+    <p class="footer-github footer-local">This software is stored locally on your device. You can review the code on <a href="https://github.com/neo-antonio/eatshimo" target="_blank">GitHub</a>.</p>
+  </footer>
+</body>
+</html>
