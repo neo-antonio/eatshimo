@@ -452,8 +452,11 @@ let charts = {};
 
 function setPeriod(period, btn) {
   chartPeriod = period;
-  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+  // Sync all period-tab groups to the selected period
+  document.querySelectorAll('.period-tab').forEach(t => {
+    const tabPeriod = t.getAttribute('onclick').match(/'(\w+)'/)[1];
+    t.classList.toggle('active', tabPeriod === period);
+  });
   renderCharts();
 }
 

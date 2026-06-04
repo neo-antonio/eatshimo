@@ -300,8 +300,41 @@
         <div class="chart-section"><div class="chart-title">Calories</div><div class="chart-wrap"><canvas id="chart-calories"></canvas></div></div>
         <div class="chart-section"><div class="chart-title">Macros (Protein / Carbs / Fat)</div><div class="chart-wrap"><canvas id="chart-macros"></canvas></div></div>
         <div class="chart-section"><div class="chart-title">Weight (kg)</div><div class="chart-wrap"><canvas id="chart-weight"></canvas></div></div>
+      </section>
+
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin-bottom:0;">Water Trend</h2>
+          <div class="chart-period-tabs">
+            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
+            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
+            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
+          </div>
+        </div>
         <div class="chart-section"><div class="chart-title">Water (ml)</div><div class="chart-wrap"><canvas id="chart-water"></canvas></div></div>
+      </section>
+
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin-bottom:0;">Steps Trend</h2>
+          <div class="chart-period-tabs">
+            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
+            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
+            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
+          </div>
+        </div>
         <div class="chart-section"><div class="chart-title">Steps</div><div class="chart-wrap"><canvas id="chart-steps"></canvas></div></div>
+      </section>
+
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin-bottom:0;">Sleep Trend</h2>
+          <div class="chart-period-tabs">
+            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
+            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
+            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
+          </div>
+        </div>
         <div class="chart-section"><div class="chart-title">Sleep (hrs)</div><div class="chart-wrap"><canvas id="chart-sleep"></canvas></div></div>
       </section>
 
