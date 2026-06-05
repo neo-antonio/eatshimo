@@ -1,5 +1,5 @@
 // ─── SERVICE WORKER — Eatshimo ────────────────────────────
-const CACHE_NAME = 'eatshimo-v1';
+const CACHE_NAME = 'eatshimo-v1.0';
 
 // Files to pre-cache on install (all core app assets)
 const PRECACHE_URLS = [
@@ -36,28 +36,28 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ─── FETCH: cache-first, fallback to network ─────────────
+// ─── FETCH: network-first, fallback to cache ─────────────
 self.addEventListener('fetch', event => {
   // Skip non-GET and chrome-extension requests
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http')) return;
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
+    fetch(event.request).then(response => {
+      // Only cache valid responses (not errors, not opaque cross-origin)
+      if (!response || response.status !== 200) return response;
 
-      // Not in cache — fetch from network and cache the response
-      return fetch(event.request).then(response => {
-        // Only cache valid responses (not errors, not opaque cross-origin)
-        if (!response || response.status !== 200) return response;
-
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
-        return response;
-      }).catch(() => {
-        // Offline and not cached — return the app shell for navigation requests
+      // Update the cache with the fresh response
+      const responseClone = response.clone();
+      caches.open(CACHE_NAME).then(cache => {
+        cache.put(event.request, responseClone);
+      });
+      return response;
+    }).catch(() => {
+      // Offline — fall back to cache
+      return caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        // Last resort: return app shell for navigation requests
         if (event.request.destination === 'document') {
           return caches.match('./index.html');
         }
