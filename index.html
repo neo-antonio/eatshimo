@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="screen-orientation" content="portrait" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -18,6 +19,42 @@
   <title>Eatshimo</title>
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Apply saved theme immediately to avoid flash -->
+  <script>
+    (function(){
+      var THEME_MAP = {
+        slate:   ['#3d4452','#555d70','#2c313a','rgba(61,68,82,0.07)'],
+        ocean:   ['#1a5276','#2471a3','#0e3460','rgba(26,82,118,0.07)'],
+        forest:  ['#1e6b45','#28895a','#134a30','rgba(30,107,69,0.07)'],
+        crimson: ['#8b1a1a','#b02323','#5e1010','rgba(139,26,26,0.07)'],
+        violet:  ['#5b2c8b','#7634b5','#3d1d5e','rgba(91,44,139,0.07)'],
+        teal:    ['#0f6b6b','#1a8c8c','#074a4a','rgba(15,107,107,0.07)'],
+        cocoa:   ['#6b3a1f','#8c4e28','#4a2510','rgba(107,58,31,0.07)'],
+        dark:    ['#4a5370','#606885','#0c0e16','rgba(74,83,112,0.15)'],
+      };
+      var DARK_BG = { bg:'#12141e', surface:'#191c28', card:'#1e2130', text:'#e2e4ef', textDim:'#6e7480', textMid:'#9aa0b0', inputBorder:'#2a2e42', shadow:'0 4px 24px rgba(0,0,0,0.5)', shadowSm:'0 2px 8px rgba(0,0,0,0.35)' };
+      var LIGHT_BG = { bg:'#f4f5f7', surface:'#ffffff', card:'#ffffff', text:'#252830', textDim:'#8a9099', textMid:'#555c6b', inputBorder:'#dde0e8', shadow:'0 4px 24px rgba(0,0,0,0.10)', shadowSm:'0 2px 8px rgba(0,0,0,0.07)' };
+      var id = localStorage.getItem('eatshimo_theme') || 'slate';
+      var t = THEME_MAP[id] || THEME_MAP.slate;
+      var r = document.documentElement.style;
+      r.setProperty('--border',     t[0]);
+      r.setProperty('--border-lite',t[1]);
+      r.setProperty('--header-bg',  t[2]);
+      r.setProperty('--footer-bg',  t[2]);
+      r.setProperty('--accent',     t[0]);
+      r.setProperty('--accent-dim', t[3]);
+      var d = id === 'dark' ? DARK_BG : LIGHT_BG;
+      r.setProperty('--bg',           d.bg);
+      r.setProperty('--surface',      d.surface);
+      r.setProperty('--card',         d.card);
+      r.setProperty('--text',         d.text);
+      r.setProperty('--text-dim',     d.textDim);
+      r.setProperty('--text-mid',     d.textMid);
+      r.setProperty('--input-border', d.inputBorder);
+      r.setProperty('--shadow',       d.shadow);
+      r.setProperty('--shadow-sm',    d.shadowSm);
+    })();
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 </head>
 <body>
@@ -349,6 +386,12 @@
         <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--text-dim);"></div>
       </section>
 
+      <section class="card">
+        <h2>Appearance</h2>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Choose a color theme. All themes use white text on the accent color.</p>
+        <div class="theme-grid" id="theme-grid"></div>
+      </section>
+
       <section class="card card-danger">
         <h2>Danger Zone</h2>
         <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;">Permanently delete all your logged data, food library, and profile. This cannot be undone.</p>
@@ -489,8 +532,21 @@
   <!-- HELP BUTTON -->
   <button class="help-btn" onclick="openTutorial()">?</button>
 
+  <!-- Landscape blocker overlay (mobile only) -->
+  <div id="rotate-overlay" aria-hidden="true">
+    <div class="rotate-box">
+      <div class="rotate-icon">⟳</div>
+      <p>Please rotate your device to portrait mode.</p>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   <script>
+    // Lock orientation to portrait on supported browsers (PWA / installed)
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      screen.orientation.lock('portrait').catch(() => {});
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
@@ -503,7 +559,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">(eatshimo v1.0)</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">(eatshimo v1.2)</p>
   </footer>
 
 <style>

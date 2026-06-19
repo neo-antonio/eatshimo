@@ -45,6 +45,74 @@ function getAllDayKeys() {
   return keys.sort();
 }
 
+// ─── THEMES ──────────────────────────────────────────────
+const THEMES = {
+  slate:    { label: 'Slate',    border: '#3d4452', borderLite: '#555d70', headerBg: '#2c313a', accentDim: 'rgba(61,68,82,0.07)' },
+  ocean:    { label: 'Ocean',    border: '#1a5276', borderLite: '#2471a3', headerBg: '#0e3460', accentDim: 'rgba(26,82,118,0.07)' },
+  forest:   { label: 'Forest',   border: '#1e6b45', borderLite: '#28895a', headerBg: '#134a30', accentDim: 'rgba(30,107,69,0.07)' },
+  crimson:  { label: 'Crimson',  border: '#8b1a1a', borderLite: '#b02323', headerBg: '#5e1010', accentDim: 'rgba(139,26,26,0.07)' },
+  violet:   { label: 'Violet',   border: '#5b2c8b', borderLite: '#7634b5', headerBg: '#3d1d5e', accentDim: 'rgba(91,44,139,0.07)' },
+  teal:     { label: 'Teal',     border: '#0f6b6b', borderLite: '#1a8c8c', headerBg: '#074a4a', accentDim: 'rgba(15,107,107,0.07)' },
+  cocoa:    { label: 'Cocoa',    border: '#6b3a1f', borderLite: '#8c4e28', headerBg: '#4a2510', accentDim: 'rgba(107,58,31,0.07)' },
+  dark:     { label: 'Dark',     border: '#4a5370', borderLite: '#606885', headerBg: '#0c0e16', accentDim: 'rgba(74,83,112,0.15)',
+    dark: true, bg: '#12141e', surface: '#191c28', card: '#1e2130',
+    text: '#e2e4ef', textDim: '#6e7480', textMid: '#9aa0b0',
+    inputBorder: '#2a2e42', shadow: '0 4px 24px rgba(0,0,0,0.5)', shadowSm: '0 2px 8px rgba(0,0,0,0.35)' },
+};
+
+const LIGHT_DEFAULTS = {
+  bg: '#f4f5f7', surface: '#ffffff', card: '#ffffff',
+  text: '#252830', textDim: '#8a9099', textMid: '#555c6b',
+  inputBorder: '#dde0e8', shadow: '0 4px 24px rgba(0,0,0,0.10)', shadowSm: '0 2px 8px rgba(0,0,0,0.07)',
+};
+
+function applyTheme(id) {
+  const t = THEMES[id] || THEMES.slate;
+  const r = document.documentElement.style;
+  // Accent / header vars (all themes)
+  r.setProperty('--border',      t.border);
+  r.setProperty('--border-lite', t.borderLite);
+  r.setProperty('--header-bg',   t.headerBg);
+  r.setProperty('--footer-bg',   t.headerBg);
+  r.setProperty('--accent',      t.border);
+  r.setProperty('--accent-dim',  t.accentDim);
+  // Background / text vars — use theme overrides if dark, else restore defaults
+  const d = t.dark ? t : LIGHT_DEFAULTS;
+  r.setProperty('--bg',           d.bg);
+  r.setProperty('--surface',      d.surface);
+  r.setProperty('--card',         d.card);
+  r.setProperty('--text',         d.text);
+  r.setProperty('--text-dim',     d.textDim);
+  r.setProperty('--text-mid',     d.textMid);
+  r.setProperty('--input-border', d.inputBorder);
+  r.setProperty('--shadow',       d.shadow);
+  r.setProperty('--shadow-sm',    d.shadowSm);
+}
+
+function loadTheme() {
+  applyTheme(localStorage.getItem('eatshimo_theme') || 'slate');
+}
+
+function selectTheme(id) {
+  localStorage.setItem('eatshimo_theme', id);
+  applyTheme(id);
+  renderThemePicker();
+}
+
+function renderThemePicker() {
+  const grid = document.getElementById('theme-grid');
+  if (!grid) return;
+  const current = localStorage.getItem('eatshimo_theme') || 'slate';
+  grid.innerHTML = Object.entries(THEMES).map(([id, t]) => `
+    <button class="theme-swatch${id === current ? ' active' : ''}"
+            style="background:${t.border};"
+            onclick="selectTheme('${id}')"
+            title="${t.label}">
+      ${id === current ? '<span class="theme-check">✓</span>' : ''}
+      <span class="theme-label">${t.label}</span>
+    </button>`).join('');
+}
+
 // ─── NAV ─────────────────────────────────────────────────
 function showPage(page, btn, bnavId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -60,7 +128,7 @@ function showPage(page, btn, bnavId) {
   const bBtn = document.getElementById('bnav-' + bId);
   if (bBtn) bBtn.classList.add('active');
   if (page === 'daily')   renderDailyLog();
-  if (page === 'profile') { loadProfile(); renderCharts(); }
+  if (page === 'profile') { loadProfile(); renderCharts(); renderThemePicker(); }
 }
 
 // ─── DATE NAV ────────────────────────────────────────────
@@ -782,9 +850,8 @@ function deleteAllData() {
   }
   toRemove.forEach(k => localStorage.removeItem(k));
   foods = [];
-  renderLibrary();
-  renderDailyLog();
-  alert('All data deleted. Starting fresh!');
+  alert('All data deleted. Please refresh to reflect your changes.');
+  location.reload();
 }
 
 // ─── AI ESTIMATE ─────────────────────────────────────────
@@ -998,6 +1065,7 @@ function renderTutStep() {
 }
 
 // ─── INIT ────────────────────────────────────────────────
+loadTheme();
 renderLibrary();
 renderDailyLog();
 // Show tutorial on first launch
