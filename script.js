@@ -114,6 +114,8 @@ function renderThemePicker() {
 }
 
 // ─── NAV ─────────────────────────────────────────────────
+let libraryExpanded = false;
+
 function showPage(page, btn, bnavId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -127,7 +129,10 @@ function showPage(page, btn, bnavId) {
   const bId = bnavId || page;
   const bBtn = document.getElementById('bnav-' + bId);
   if (bBtn) bBtn.classList.add('active');
+  // Reset library collapse on every tab switch
+  if (page !== 'library') libraryExpanded = false;
   if (page === 'daily')   renderDailyLog();
+  if (page === 'library') renderLibrary();
   if (page === 'profile') { loadProfile(); renderCharts(); renderThemePicker(); }
 }
 
@@ -216,10 +221,27 @@ function renderDailyLog() {
   }
 }
 
+let mealEditMode = 'grams';
+let mealBaseRates = {};
+
 function openEditMealModal(index) {
   const key  = dateStr(currentDate);
   const data = getDayData(key);
   const m    = data.meals[index];
+  mealEditMode = 'grams';
+
+  // Try to look up the original food in the library for accurate per-gram rates
+  const libFood = foods.find(f => f.name === m.name);
+  const baseG = libFood ? (libFood.grams || 100) : m.grams;
+  const src   = libFood || m;
+  mealBaseRates = {
+    calories: src.calories / baseG,
+    protein:  src.protein  / baseG,
+    carbs:    src.carbs    / baseG,
+    fat:      src.fat      / baseG,
+    fiber:    (src.fiber || 0) / baseG,
+  };
+
   document.getElementById('edit-meal-index').value    = index;
   document.getElementById('edit-meal-name').value     = m.name;
   document.getElementById('edit-meal-grams').value    = m.grams;
@@ -228,7 +250,38 @@ function openEditMealModal(index) {
   document.getElementById('edit-meal-carbs').value    = parseFloat(m.carbs.toFixed(1));
   document.getElementById('edit-meal-fat').value      = parseFloat(m.fat.toFixed(1));
   document.getElementById('edit-meal-fiber').value    = parseFloat((m.fiber||0).toFixed(1));
+  setMealEditMode('grams');
   document.getElementById('edit-meal-overlay').classList.remove('hidden');
+}
+
+function setMealEditMode(mode) {
+  mealEditMode = mode;
+  document.getElementById('meal-mode-grams').classList.toggle('active',  mode === 'grams');
+  document.getElementById('meal-mode-manual').classList.toggle('active', mode === 'manual');
+  const macroFields = ['calories','protein','carbs','fat','fiber'];
+  macroFields.forEach(id => {
+    const field = document.getElementById('meal-field-' + id);
+    const input = document.getElementById('edit-meal-' + id);
+    if (mode === 'grams') {
+      field.classList.add('edit-field-readonly');
+      input.readOnly = true;
+    } else {
+      field.classList.remove('edit-field-readonly');
+      input.readOnly = false;
+    }
+  });
+  if (mode === 'grams') onMealGramsInput();
+}
+
+function onMealGramsInput() {
+  if (mealEditMode !== 'grams') return;
+  const g = parseFloat(document.getElementById('edit-meal-grams').value) || 0;
+  if (g <= 0) return;
+  document.getElementById('edit-meal-calories').value = (mealBaseRates.calories * g).toFixed(1);
+  document.getElementById('edit-meal-protein').value  = (mealBaseRates.protein  * g).toFixed(1);
+  document.getElementById('edit-meal-carbs').value    = (mealBaseRates.carbs    * g).toFixed(1);
+  document.getElementById('edit-meal-fat').value      = (mealBaseRates.fat      * g).toFixed(1);
+  document.getElementById('edit-meal-fiber').value    = (mealBaseRates.fiber    * g).toFixed(1);
 }
 
 function saveEditedMeal() {
@@ -964,13 +1017,30 @@ function clearForm() {
   document.getElementById('food-name').focus();
 }
 
+const LIBRARY_COLLAPSE_THRESHOLD = 5;
+
+function expandLibrary() {
+  libraryExpanded = true;
+  renderLibrary();
+}
+
 function renderLibrary() {
-  const query=document.getElementById('search-input').value.toLowerCase();
-  const list=document.getElementById('food-list');
-  const sorted=[...foods].map((f,i)=>({...f,originalIndex:i})).sort((a,b)=>a.name.localeCompare(b.name));
-  const filtered=sorted.filter(f=>f.name.toLowerCase().includes(query));
-  if (filtered.length===0) { list.innerHTML=`<p class="empty-msg">${query?'No foods match your search.':'No foods saved yet. Add one above or use Presets!'}</p>`; return; }
-  list.innerHTML=filtered.map(f=>`
+  const query = document.getElementById('search-input').value.toLowerCase();
+  const list = document.getElementById('food-list');
+  const sorted = [...foods].map((f,i) => ({...f, originalIndex:i})).sort((a,b) => a.name.localeCompare(b.name));
+  const filtered = sorted.filter(f => f.name.toLowerCase().includes(query));
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<p class="empty-msg">${query ? 'No foods match your search.' : 'No foods saved yet. Add one above or use Presets!'}</p>`;
+    return;
+  }
+
+  const isSearching = query.length > 0;
+  const showAll = libraryExpanded || isSearching || filtered.length <= LIBRARY_COLLAPSE_THRESHOLD;
+  const visible = showAll ? filtered : filtered.slice(0, LIBRARY_COLLAPSE_THRESHOLD);
+  const hiddenCount = filtered.length - LIBRARY_COLLAPSE_THRESHOLD;
+
+  const itemsHTML = visible.map(f => `
     <div class="food-item">
       <div class="food-info">
         <div class="food-name">${f.name}</div>
@@ -980,7 +1050,7 @@ function renderLibrary() {
           <div class="macro-chip">P <span>${f.protein}g</span></div>
           <div class="macro-chip">C <span>${f.carbs}g</span></div>
           <div class="macro-chip">F <span>${f.fat}g</span></div>
-          ${f.fiber>0?`<div class="macro-chip fiber">Fiber <span>${f.fiber}g</span></div>`:''}
+          ${f.fiber>0 ? `<div class="macro-chip fiber">Fiber <span>${f.fiber}g</span></div>` : ''}
         </div>
       </div>
       <div class="food-actions">
@@ -988,6 +1058,13 @@ function renderLibrary() {
         <button class="btn-delete" onclick="deleteFood(${f.originalIndex})">Delete</button>
       </div>
     </div>`).join('');
+
+  const viewAllHTML = (!showAll && hiddenCount > 0) ? `
+    <div class="library-view-all">
+      <button class="btn-view-all" onclick="expandLibrary()">View All ${filtered.length} Foods ▾</button>
+    </div>` : '';
+
+  list.innerHTML = itemsHTML + viewAllHTML;
 }
 
 function deleteFood(index) {
@@ -995,27 +1072,36 @@ function deleteFood(index) {
   foods.splice(index,1); saveFoodsToDisk(); renderLibrary();
 }
 
+// ─── EDIT FOOD MODAL ────────────────────────────────────
 function openEdit(index) {
-  const f=foods[index];
+  const f = foods[index];
   document.getElementById('edit-index').value    = index;
   document.getElementById('edit-name').value     = f.name;
-  document.getElementById('edit-grams').value    = f.grams||100;
+  document.getElementById('edit-grams').value    = f.grams || 100;
   document.getElementById('edit-calories').value = f.calories;
   document.getElementById('edit-protein').value  = f.protein;
   document.getElementById('edit-carbs').value    = f.carbs;
   document.getElementById('edit-fat').value      = f.fat;
-  document.getElementById('edit-fiber').value    = f.fiber||0;
+  document.getElementById('edit-fiber').value    = f.fiber || 0;
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 
-function closeModal(e) { if(e.target===document.getElementById('modal-overlay')) closeModalDirect(); }
+function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalDirect(); }
 function closeModalDirect() { document.getElementById('modal-overlay').classList.add('hidden'); }
 
 function updateFood() {
-  const index=parseInt(document.getElementById('edit-index').value);
-  const name=document.getElementById('edit-name').value.trim();
+  const index = parseInt(document.getElementById('edit-index').value);
+  const name  = document.getElementById('edit-name').value.trim();
   if (!name) { alert('Food name cannot be empty.'); return; }
-  foods[index]={ name, grams:parseFloat(document.getElementById('edit-grams').value)||100, calories:parseFloat(document.getElementById('edit-calories').value)||0, protein:parseFloat(document.getElementById('edit-protein').value)||0, carbs:parseFloat(document.getElementById('edit-carbs').value)||0, fat:parseFloat(document.getElementById('edit-fat').value)||0, fiber:parseFloat(document.getElementById('edit-fiber').value)||0 };
+  foods[index] = {
+    name,
+    grams:    parseFloat(document.getElementById('edit-grams').value)    || 100,
+    calories: parseFloat(document.getElementById('edit-calories').value) || 0,
+    protein:  parseFloat(document.getElementById('edit-protein').value)  || 0,
+    carbs:    parseFloat(document.getElementById('edit-carbs').value)    || 0,
+    fat:      parseFloat(document.getElementById('edit-fat').value)      || 0,
+    fiber:    parseFloat(document.getElementById('edit-fiber').value)    || 0,
+  };
   saveFoodsToDisk(); renderLibrary(); closeModalDirect();
 }
 

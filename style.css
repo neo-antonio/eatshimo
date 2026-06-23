@@ -34,6 +34,7 @@ body {
   font-size: 15px;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -95,10 +96,15 @@ main {
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  flex: 1;
 }
 
 .page { display: none; flex-direction: column; gap: 16px; }
-.page.active { display: flex; }
+.page.active { display: flex; animation: pageFadeIn 0.22s ease both; }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ─── CARD ─── */
 .card {
@@ -193,6 +199,57 @@ button:active { transform: scale(0.97); }
 
 #food-list { display: flex; flex-direction: column; gap: 8px; }
 .empty-msg { color: var(--text-dim); font-size: 13px; text-align: center; padding: 28px 0; }
+
+/* ─── LIBRARY VIEW ALL ─── */
+.library-view-all {
+  margin-top: 4px;
+  text-align: center;
+}
+.btn-view-all {
+  background: var(--accent-dim);
+  color: var(--text-mid);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  box-shadow: none;
+}
+.btn-view-all:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+
+/* ─── EDIT FOOD MODES ─── */
+.edit-mode-picker {
+  display: flex;
+  gap: 0;
+  margin-bottom: 18px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+.edit-mode-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--text-mid);
+  border: none;
+  border-radius: 7px;
+  padding: 11px 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.3;
+  box-shadow: none;
+  transition: background 0.15s, color 0.15s;
+}
+.edit-mode-btn:hover { opacity: 1; box-shadow: none; }
+.edit-mode-btn .mode-label { display: block; font-size: 13px; font-weight: 700; }
+.edit-mode-btn .mode-desc { font-size: 11px; font-weight: 400; color: var(--text-dim); display: block; margin-top: 4px; line-height: 1.4; }
+.edit-mode-btn.active { background: var(--border); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+.edit-mode-btn.active .mode-desc { color: rgba(255,255,255,0.75); }
+.edit-field-readonly { opacity: 0.45; pointer-events: none; }
+.edit-field-readonly input { cursor: not-allowed; }
 
 .food-item {
   background: var(--surface);

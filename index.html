@@ -461,16 +461,27 @@
   <div id="edit-meal-overlay" class="hidden" onclick="closeEditMealModal(event)">
     <div class="modal">
       <h2>Edit Logged Meal</h2>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Changes only apply to this day's log. Your food library is not affected.</p>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Changes only apply to this day's log. Your food library is not affected.</p>
       <input type="hidden" id="edit-meal-index" />
+      <!-- Edit Mode Picker -->
+      <div class="edit-mode-picker">
+        <button class="edit-mode-btn active" id="meal-mode-grams" onclick="setMealEditMode('grams')">
+          <span class="mode-label">Edit Grams Only</span>
+          <span class="mode-desc">Macros auto-scale from original library values</span>
+        </button>
+        <button class="edit-mode-btn" id="meal-mode-manual" onclick="setMealEditMode('manual')">
+          <span class="mode-label">Edit Individual Macros</span>
+          <span class="mode-desc">Manually set all values freely</span>
+        </button>
+      </div>
       <div class="form-grid">
         <div class="field full"><label>Food Name</label><input type="text" id="edit-meal-name" readonly style="opacity:0.6;cursor:not-allowed;" /></div>
-        <div class="field"><label>Grams</label><input type="number" id="edit-meal-grams" min="1" /></div>
-        <div class="field"><label>Calories (kcal)</label><input type="number" id="edit-meal-calories" min="0" /></div>
-        <div class="field"><label>Protein (g)</label><input type="number" id="edit-meal-protein" min="0" /></div>
-        <div class="field"><label>Carbs (g)</label><input type="number" id="edit-meal-carbs" min="0" /></div>
-        <div class="field"><label>Fat (g)</label><input type="number" id="edit-meal-fat" min="0" /></div>
-        <div class="field"><label>Fiber (g)</label><input type="number" id="edit-meal-fiber" min="0" /></div>
+        <div class="field"><label>Grams</label><input type="number" id="edit-meal-grams" min="1" oninput="onMealGramsInput()" /></div>
+        <div class="field edit-field-readonly" id="meal-field-calories"><label>Calories (kcal)</label><input type="number" id="edit-meal-calories" min="0" /></div>
+        <div class="field edit-field-readonly" id="meal-field-protein"><label>Protein (g)</label><input type="number" id="edit-meal-protein" min="0" /></div>
+        <div class="field edit-field-readonly" id="meal-field-carbs"><label>Carbs (g)</label><input type="number" id="edit-meal-carbs" min="0" /></div>
+        <div class="field edit-field-readonly" id="meal-field-fat"><label>Fat (g)</label><input type="number" id="edit-meal-fat" min="0" /></div>
+        <div class="field edit-field-readonly" id="meal-field-fiber"><label>Fiber (g)</label><input type="number" id="edit-meal-fiber" min="0" /></div>
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeEditMealModalDirect()">Cancel</button>
@@ -542,11 +553,6 @@
 
   <script src="script.js"></script>
   <script>
-    // Lock orientation to portrait on supported browsers (PWA / installed)
-    if (screen.orientation && typeof screen.orientation.lock === 'function') {
-      screen.orientation.lock('portrait').catch(() => {});
-    }
-
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
@@ -559,7 +565,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">(eatshimo v1.2)</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v1.3</p>
   </footer>
 
 <style>
