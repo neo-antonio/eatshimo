@@ -363,9 +363,12 @@ button:active { transform: scale(0.97); }
 .extra-val { font-size: 18px; font-weight: 700; color: var(--text); }
 .extra-unit { font-size: 10px; color: var(--text-dim); margin-top: -4px; }
 .extra-card input[type="number"] { padding: 7px 9px; font-size: 13px; border-radius: 7px; }
-.extra-card button { padding: 7px; font-size: 12px; font-weight: 600; border-radius: 7px; width: 100%; }
-.btn-clear-water { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(240,95,95,0.2); font-size: 11px; font-weight: 500; border-radius: 7px; box-shadow: none; width: 100%; padding: 6px; font-family:'Ubuntu',sans-serif; }
-.btn-clear-water:hover { background: rgba(240,95,95,0.18); box-shadow: none; opacity: 1; }
+.extra-btn-row { display: flex; gap: 5px; }
+.extra-btn-row button { flex: 1; padding: 7px 4px; font-size: 12px; font-weight: 600; border-radius: 7px; }
+.btn-clear-water { background: transparent; color: var(--text-dim); border: 1px solid var(--input-border); font-size: 11px; font-weight: 500; border-radius: 7px; box-shadow: none; font-family:'Ubuntu',sans-serif; }
+.btn-clear-water:hover { background: var(--accent-dim); color: var(--text); border-color: var(--border-lite); opacity: 1; box-shadow: none; }
+.steps-count-row { display: flex; align-items: baseline; gap: 6px; }
+.steps-burned { font-size: 11px; color: var(--success); font-weight: 600; }
 
 /* ─── PROFILE ─── */
 .section-divider { font-size: 11px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 18px 0 12px; display: flex; align-items: center; gap: 8px; }
@@ -404,12 +407,14 @@ button:active { transform: scale(0.97); }
 .btn-danger-full:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
 
 /* ─── MODALS ─── */
-#modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay {
+#modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
+#add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center;
   padding: 16px; z-index: 100; backdrop-filter: blur(6px);
 }
-#modal-overlay.hidden, #log-modal-overlay.hidden, #edit-meal-overlay.hidden, #cal-overlay.hidden, #tutorial-overlay.hidden { display: none; }
+#modal-overlay.hidden, #log-modal-overlay.hidden, #edit-meal-overlay.hidden, #cal-overlay.hidden, #tutorial-overlay.hidden,
+#add-ex-overlay.hidden, #edit-ex-overlay.hidden, #add-cl-overlay.hidden, #edit-cl-overlay.hidden { display: none; }
 
 .modal {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
@@ -594,7 +599,8 @@ footer {
   .meal-item-actions { flex-direction: row; width: 100%; justify-content: flex-end; margin-top: 6px; }
 
   /* Modals — slide up from bottom on mobile */
-  #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay {
+  #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
+  #add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay {
     align-items: flex-end;
     padding: 0;
   }
@@ -678,6 +684,101 @@ footer {
   .theme-swatch { height: 50px; }
   .theme-label { font-size: 9px; }
 }
+
+/* ─── COLLAPSIBLE CARDS ─── */
+.collapsible-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+.collapsible-header h2 { margin-bottom: 0; }
+.collapse-chevron { font-size: 11px; color: var(--text-dim); flex-shrink: 0; padding: 2px 4px; }
+.collapsible-body { margin-top: 14px; }
+
+/* ─── EXERCISE TRACKER ─── */
+.ex-item { background: var(--bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.ex-item:last-of-type { margin-bottom: 0; }
+.ex-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.ex-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ex-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.ex-type-badge { font-size: 10px; font-weight: 600; color: var(--text-mid); background: var(--accent-dim); border-radius: 4px; padding: 2px 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.btn-ex-settings { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 8px; padding: 5px 9px; font-size: 14px; box-shadow: none; line-height: 1; flex-shrink: 0; }
+.btn-ex-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.ex-progress-bar-wrap { height: 5px; background: var(--accent-dim); border-radius: 5px; margin-bottom: 9px; overflow: hidden; }
+.ex-progress-bar { height: 100%; background: var(--border); border-radius: 5px; transition: width 0.3s; }
+.ex-summary { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+.ex-sets-display { font-size: 13px; color: var(--text-mid); line-height: 1.4; }
+.ex-kcal { font-size: 12px; color: var(--success); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.ex-log-row { display: flex; gap: 6px; align-items: center; }
+.ex-input { flex: 1; min-width: 0; padding: 8px 10px; font-size: 14px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; }
+.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0 0 0 3px var(--accent-dim); }
+.btn-log-set { flex-shrink: 0; padding: 8px 14px; font-size: 13px; font-weight: 600; }
+.btn-remove-set { flex-shrink: 0; padding: 8px 10px; font-size: 12px; background: var(--bg); color: var(--text-dim); border: 1px solid var(--input-border); box-shadow: none; }
+.btn-remove-set:hover { background: var(--danger-dim); color: var(--danger); opacity: 1; box-shadow: none; }
+.btn-add-card-item { width: 100%; margin-top: 12px; background: var(--accent-dim); color: var(--text); border: 1px solid var(--input-border); box-shadow: none; font-size: 13px; font-weight: 500; }
+.btn-add-card-item:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+
+/* Add exercise modal chips */
+.ex-preset-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--input-border); border-radius: 8px; padding: 7px 12px; margin: 3px; font-size: 13px; font-weight: 500; box-shadow: none; }
+.ex-preset-btn:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.ex-preset-btn:hover .ex-type-badge { background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.9); }
+.ex-active-btn { display: inline-flex; align-items: center; gap: 5px; background: var(--border); color: #fff; border: none; border-radius: 8px; padding: 5px 10px; margin: 3px; font-size: 12px; font-weight: 500; box-shadow: none; }
+.ex-active-btn:hover { opacity: 0.75; box-shadow: none; }
+
+/* ─── HEALTH ROUTINES CHECKLIST ─── */
+.cl-item { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--input-border); gap: 10px; }
+.cl-item:last-child { border-bottom: none; }
+.cl-item-content { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.cl-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.cl-boxes { display: flex; gap: 6px; flex-wrap: wrap; }
+.cl-box { width: 30px; height: 30px; border-radius: 7px; border: 2px solid var(--input-border); background: var(--bg); color: transparent; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: none; padding: 0; transition: all 0.12s; flex-shrink: 0; cursor: pointer; }
+.cl-box.checked { background: var(--border); border-color: var(--border); color: #fff; }
+.cl-box:hover { border-color: var(--border); opacity: 1; box-shadow: none; }
+.btn-cl-edit { flex-shrink: 0; background: none; color: var(--text-dim); border: 1px solid var(--input-border); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 500; box-shadow: none; }
+.btn-cl-edit:hover { background: var(--accent-dim); color: var(--text); opacity: 1; box-shadow: none; }
+
+/* ─── TOGGLE SWITCH (Profile) ─── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.toggle-info { flex: 1; }
+.toggle-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.toggle-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+.toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--input-border); border-radius: 28px; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 22px; height: 22px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+.toggle-switch input:checked + .toggle-slider { background: var(--border); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+/* ─── DAY PICKER ─── */
+.day-picker { display: flex; gap: 5px; flex-wrap: wrap; }
+.day-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  border: 1.5px solid var(--input-border); background: var(--bg);
+  color: var(--text-dim); font-size: 12px; font-weight: 700;
+  box-shadow: none; padding: 0; cursor: pointer; transition: all 0.12s; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.day-btn.active { background: var(--border); border-color: var(--border); color: #fff; }
+.day-btn:hover { border-color: var(--border); opacity: 1; box-shadow: none; }
+.ex-day-tags { display: flex; gap: 3px; flex-wrap: wrap; }
+.ex-day-tag {
+  font-size: 9px; font-weight: 700; color: var(--text-mid);
+  background: var(--accent-dim); border-radius: 4px; padding: 1px 4px;
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+
+/* ─── ASK AI BUTTON (Add Exercise Modal) ─── */
+.ask-ai-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.ask-ai-check {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 500; color: var(--text-mid); cursor: pointer; user-select: none;
+}
+.ask-ai-check input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--border); flex-shrink: 0; }
+.btn-ask-ai {
+  background: var(--border); color: #fff; border: none; border-radius: 8px;
+  padding: 8px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2); flex-shrink: 0;
+}
+.btn-ask-ai:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
 
 /* ─── PORTRAIT LOCK OVERLAY ─── */
 #rotate-overlay {

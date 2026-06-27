@@ -82,7 +82,7 @@
             <label for="food-name">Food Name</label>
             <div style="display:flex;gap:8px;align-items:stretch;">
               <input type="text" id="food-name" placeholder="e.g. Chicken Breast" style="flex:1;" />
-              <button type="button" class="btn-ai-estimate" onclick="openAIEstimate()">Ask AI</button>
+              <button type="button" class="btn-ai-estimate" onclick="openAIEstimate()">✦ Ask AI</button>
             </div>
           </div>
           <div class="field">
@@ -171,44 +171,85 @@
         <div id="meal-list"><p class="empty-msg">No meals logged yet today.</p></div>
       </section>
 
-      <section class="card">
-        <h2>Daily Extras</h2>
-        <div class="extras-grid">
-          <div class="extra-card">
-            <span class="extra-label">Water</span>
-            <span class="extra-val" id="water-val">0</span>
-            <span class="extra-unit">ml today</span>
-            <input type="number" id="water-input" placeholder="e.g. 250" min="0" />
-            <button onclick="logWater()">+ Add</button>
-            <button class="btn-clear-water" onclick="clearWater()">Clear</button>
-          </div>
-          <div class="extra-card">
-            <span class="extra-label">Steps</span>
-            <span class="extra-val" id="steps-val">0</span>
-            <span class="extra-unit">steps today</span>
-            <span class="steps-burned" id="steps-burned"></span>
-            <input type="number" id="steps-input" placeholder="e.g. 1000" min="0" />
-            <button onclick="logSteps()">Set</button>
-            <button class="btn-clear-water" onclick="clearSteps()">Clear</button>
-          </div>
-          <div class="extra-card">
-            <span class="extra-label">Weight</span>
-            <span class="extra-val" id="weight-val">—</span>
-            <span class="extra-unit">kg (optional)</span>
-            <input type="number" id="weight-input" placeholder="e.g. 70.5" min="0" step="0.1" />
-            <button onclick="logWeight()">Log</button>
-            <button class="btn-clear-water" onclick="clearWeight()">Clear</button>
-          </div>
-          <div class="extra-card">
-            <span class="extra-label">Sleep</span>
-            <span class="extra-val" id="sleep-val">—</span>
-            <span class="extra-unit">hrs last night</span>
-            <input type="number" id="sleep-input" placeholder="e.g. 7.5" min="0" max="24" step="0.5" />
-            <button onclick="logSleep()">Log</button>
-            <button class="btn-clear-water" onclick="clearSleep()">Clear</button>
+      <!-- DAILY EXTRAS -->
+      <section class="card collapsible-card" id="card-extras">
+        <div class="collapsible-header" onclick="toggleCardCollapse('extras')">
+          <h2>Daily Extras</h2>
+          <span class="collapse-chevron" id="chevron-extras">▲</span>
+        </div>
+        <div class="collapsible-body" id="body-extras">
+          <div class="extras-grid">
+            <div class="extra-card">
+              <span class="extra-label">Water</span>
+              <span class="extra-val" id="water-val">0</span>
+              <span class="extra-unit">ml today</span>
+              <input type="number" id="water-input" placeholder="e.g. 250" min="0" />
+              <div class="extra-btn-row">
+                <button onclick="logWater()">+ Add</button>
+                <button class="btn-clear-water" onclick="clearWater()">Clear</button>
+              </div>
+            </div>
+            <div class="extra-card">
+              <span class="extra-label">Steps</span>
+              <div class="steps-count-row">
+                <span class="extra-val" id="steps-val">0</span>
+                <span class="steps-burned" id="steps-burned"></span>
+              </div>
+              <span class="extra-unit">steps today</span>
+              <input type="number" id="steps-input" placeholder="e.g. 1000" min="0" />
+              <div class="extra-btn-row">
+                <button onclick="logSteps()">Set</button>
+                <button class="btn-clear-water" onclick="clearSteps()">Clear</button>
+              </div>
+            </div>
+            <div class="extra-card">
+              <span class="extra-label">Weight</span>
+              <span class="extra-val" id="weight-val">—</span>
+              <span class="extra-unit">kg (optional)</span>
+              <input type="number" id="weight-input" placeholder="e.g. 70.5" min="0" step="0.1" />
+              <div class="extra-btn-row">
+                <button onclick="logWeight()">Log</button>
+                <button class="btn-clear-water" onclick="clearWeight()">Clear</button>
+              </div>
+            </div>
+            <div class="extra-card">
+              <span class="extra-label">Sleep</span>
+              <span class="extra-val" id="sleep-val">—</span>
+              <span class="extra-unit">hrs last night</span>
+              <input type="number" id="sleep-input" placeholder="e.g. 7.5" min="0" max="24" step="0.5" />
+              <div class="extra-btn-row">
+                <button onclick="logSleep()">Log</button>
+                <button class="btn-clear-water" onclick="clearSleep()">Clear</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
+
+      <!-- EXERCISE TRACKER -->
+      <section class="card collapsible-card" id="card-exercise">
+        <div class="collapsible-header" onclick="toggleCardCollapse('exercise')">
+          <h2>Exercise Tracker</h2>
+          <span class="collapse-chevron" id="chevron-exercise">▲</span>
+        </div>
+        <div class="collapsible-body" id="body-exercise">
+          <div id="exercise-list"></div>
+          <button class="btn-add-card-item" onclick="openAddExModal()">+ Add Exercise</button>
+        </div>
+      </section>
+
+      <!-- HEALTH ROUTINES CHECKLIST -->
+      <section class="card collapsible-card" id="card-checklist">
+        <div class="collapsible-header" onclick="toggleCardCollapse('checklist')">
+          <h2>Health Routines</h2>
+          <span class="collapse-chevron" id="chevron-checklist">▲</span>
+        </div>
+        <div class="collapsible-body" id="body-checklist">
+          <div id="checklist-list"></div>
+          <button class="btn-add-card-item" onclick="openAddCLModal()">+ Add Routine</button>
+        </div>
+      </section>
+
     </div>
 
     <!-- ══════════ PROFILE PAGE ══════════ -->
@@ -336,10 +377,10 @@
         </div>
         <div class="chart-section"><div class="chart-title">Calories</div><div class="chart-wrap"><canvas id="chart-calories"></canvas></div></div>
         <div class="chart-section"><div class="chart-title">Macros (Protein / Carbs / Fat)</div><div class="chart-wrap"><canvas id="chart-macros"></canvas></div></div>
-        <div class="chart-section"><div class="chart-title">Weight (kg)</div><div class="chart-wrap"><canvas id="chart-weight"></canvas></div></div>
+        <div class="chart-section" id="profile-chart-weight"><div class="chart-title">Weight (kg)</div><div class="chart-wrap"><canvas id="chart-weight"></canvas></div></div>
       </section>
 
-      <section class="card">
+      <section class="card" id="profile-chart-water">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <h2 style="margin-bottom:0;">Water Trend</h2>
           <div class="chart-period-tabs">
@@ -351,7 +392,7 @@
         <div class="chart-section"><div class="chart-title">Water (ml)</div><div class="chart-wrap"><canvas id="chart-water"></canvas></div></div>
       </section>
 
-      <section class="card">
+      <section class="card" id="profile-chart-steps">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <h2 style="margin-bottom:0;">Steps Trend</h2>
           <div class="chart-period-tabs">
@@ -363,7 +404,7 @@
         <div class="chart-section"><div class="chart-title">Steps</div><div class="chart-wrap"><canvas id="chart-steps"></canvas></div></div>
       </section>
 
-      <section class="card">
+      <section class="card" id="profile-chart-sleep">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <h2 style="margin-bottom:0;">Sleep Trend</h2>
           <div class="chart-period-tabs">
@@ -384,6 +425,42 @@
           <input type="file" id="csv-import" accept=".csv" style="display:none;" onchange="importCSV(event)" />
         </div>
         <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--text-dim);"></div>
+      </section>
+
+      <section class="card">
+        <h2>Daily Log Cards</h2>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Daily Extras</div>
+              <div class="toggle-desc">Water, steps, weight &amp; sleep tracker</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-extras" onchange="saveCardToggle('extras',this)" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Exercise Tracker</div>
+              <div class="toggle-desc">Log workouts and track calories burned</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-exercise" onchange="saveCardToggle('exercise',this)" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Health Routines</div>
+              <div class="toggle-desc">Daily checklists for vitamins, skincare, etc.</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-checklist" onchange="saveCardToggle('checklist',this)" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -551,6 +628,148 @@
     </div>
   </div>
 
+  <!-- ADD EXERCISE MODAL -->
+  <div id="add-ex-overlay" class="hidden" onclick="if(event.target===this)closeAddExModal()">
+    <div class="modal">
+      <h2>Add Exercise</h2>
+      <div class="ask-ai-row">
+        <label class="ask-ai-check">
+          <input type="checkbox" id="ex-no-equipment" checked />
+          No equipment
+        </label>
+        <button class="btn-ask-ai" onclick="openAskAI()">✦ Ask AI for Suggestions</button>
+      </div>
+      <div class="section-divider">Available to Add</div>
+      <div id="add-ex-preset-list" style="margin-bottom:8px;"></div>
+      <div class="section-divider" style="margin-top:4px;">Currently Tracking</div>
+      <div id="add-ex-active-list" style="margin-bottom:4px;min-height:28px;"></div>
+      <div class="section-divider">Schedule for New Exercises</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px;">Active Days</label>
+          <div class="day-picker" id="new-ex-days">
+            <button class="day-btn active" data-day="1" onclick="toggleDayBtn(this)">M</button>
+            <button class="day-btn active" data-day="2" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn active" data-day="3" onclick="toggleDayBtn(this)">W</button>
+            <button class="day-btn active" data-day="4" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn active" data-day="5" onclick="toggleDayBtn(this)">F</button>
+            <button class="day-btn active" data-day="6" onclick="toggleDayBtn(this)">S</button>
+            <button class="day-btn active" data-day="0" onclick="toggleDayBtn(this)">S</button>
+          </div>
+        </div>
+        <label class="ask-ai-check">
+          <input type="checkbox" id="ex-apply-past" />
+          Also apply to past days
+        </label>
+      </div>
+      <div class="section-divider" style="margin-top:14px;">Create Custom</div>
+      <div class="form-grid" style="margin-top:10px;">
+        <div class="field full"><label>Exercise Name</label><input type="text" id="new-ex-name" placeholder="e.g. Pull-up" /></div>
+        <div class="field">
+          <label>Type</label>
+          <select id="new-ex-type"><option value="reps">Reps</option><option value="secs">Seconds</option></select>
+        </div>
+        <div class="field"><label>Daily Goal (optional)</label><input type="number" id="new-ex-goal" placeholder="e.g. 50" min="0" /></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeAddExModal()">Close</button>
+        <button onclick="addCustomExercise()">Add Custom</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT EXERCISE MODAL -->
+  <div id="edit-ex-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('edit-ex-overlay').classList.add('hidden')">
+    <div class="modal">
+      <h2>Edit Exercise</h2>
+      <div class="form-grid">
+        <div class="field full"><label>Name</label><input type="text" id="edit-ex-name" /></div>
+        <div class="field full"><label>Daily Goal (0 = no goal)</label><input type="number" id="edit-ex-goal" min="0" placeholder="e.g. 50" /></div>
+        <div class="field full">
+          <label>Active Days</label>
+          <div class="day-picker" id="edit-ex-days" style="margin-top:4px;">
+            <button class="day-btn" data-day="1" onclick="toggleDayBtn(this)">M</button>
+            <button class="day-btn" data-day="2" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn" data-day="3" onclick="toggleDayBtn(this)">W</button>
+            <button class="day-btn" data-day="4" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn" data-day="5" onclick="toggleDayBtn(this)">F</button>
+            <button class="day-btn" data-day="6" onclick="toggleDayBtn(this)">S</button>
+            <button class="day-btn" data-day="0" onclick="toggleDayBtn(this)">S</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger" onclick="deleteExFromTracker()">Remove</button>
+        <button onclick="saveEditEx()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD CHECKLIST MODAL -->
+  <div id="add-cl-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('add-cl-overlay').classList.add('hidden')">
+    <div class="modal">
+      <h2>Add Health Routine</h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">e.g. Vitamins, Skincare, Medication</p>
+      <div class="form-grid">
+        <div class="field full"><label>Routine Name</label><input type="text" id="new-cl-name" placeholder="e.g. Take Vitamins" /></div>
+        <div class="field full">
+          <label>Times per day (1–5 checkboxes)</label>
+          <input type="number" id="new-cl-count" min="1" max="5" value="1" />
+          <span style="font-size:11px;color:var(--text-dim);margin-top:4px;display:block;">Each occurrence gets its own checkbox.</span>
+        </div>
+        <div class="field full">
+          <label>Active Days</label>
+          <div class="day-picker" id="new-cl-days" style="margin-top:4px;">
+            <button class="day-btn active" data-day="1" onclick="toggleDayBtn(this)">M</button>
+            <button class="day-btn active" data-day="2" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn active" data-day="3" onclick="toggleDayBtn(this)">W</button>
+            <button class="day-btn active" data-day="4" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn active" data-day="5" onclick="toggleDayBtn(this)">F</button>
+            <button class="day-btn active" data-day="6" onclick="toggleDayBtn(this)">S</button>
+            <button class="day-btn active" data-day="0" onclick="toggleDayBtn(this)">S</button>
+          </div>
+        </div>
+        <div class="field full">
+          <label class="ask-ai-check">
+            <input type="checkbox" id="cl-apply-past" />
+            Also apply to past days
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="document.getElementById('add-cl-overlay').classList.add('hidden')">Cancel</button>
+        <button onclick="saveNewCL()">Add Routine</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT CHECKLIST MODAL -->
+  <div id="edit-cl-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('edit-cl-overlay').classList.add('hidden')">
+    <div class="modal">
+      <h2>Edit Routine</h2>
+      <div class="form-grid">
+        <div class="field full"><label>Name</label><input type="text" id="edit-cl-name" /></div>
+        <div class="field full"><label>Times per day (1–5)</label><input type="number" id="edit-cl-count" min="1" max="5" /></div>
+        <div class="field full">
+          <label>Active Days</label>
+          <div class="day-picker" id="edit-cl-days" style="margin-top:4px;">
+            <button class="day-btn" data-day="1" onclick="toggleDayBtn(this)">M</button>
+            <button class="day-btn" data-day="2" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn" data-day="3" onclick="toggleDayBtn(this)">W</button>
+            <button class="day-btn" data-day="4" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn" data-day="5" onclick="toggleDayBtn(this)">F</button>
+            <button class="day-btn" data-day="6" onclick="toggleDayBtn(this)">S</button>
+            <button class="day-btn" data-day="0" onclick="toggleDayBtn(this)">S</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger" onclick="deleteCLItem()">Delete</button>
+        <button onclick="saveEditCL()">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -565,7 +784,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v1.3</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v1.4</p>
   </footer>
 
 <style>

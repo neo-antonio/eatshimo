@@ -26,7 +26,12 @@ function nowInTZ() {
 }
 function getDayKey(ds) { return 'eatshimo_day_' + ds; }
 function getDayData(ds) {
-  return JSON.parse(localStorage.getItem(getDayKey(ds)) || '{"meals":[],"water":0,"steps":0,"weight":null,"sleep":null}');
+  const raw = localStorage.getItem(getDayKey(ds));
+  if (!raw) return { meals: [], water: 0, steps: 0, weight: null, sleep: null, exercises: {}, checklist: {} };
+  const d = JSON.parse(raw);
+  if (!d.exercises) d.exercises = {};
+  if (!d.checklist) d.checklist = {};
+  return d;
 }
 function saveDayData(ds, data) { localStorage.setItem(getDayKey(ds), JSON.stringify(data)); }
 
@@ -133,7 +138,7 @@ function showPage(page, btn, bnavId) {
   if (page !== 'library') libraryExpanded = false;
   if (page === 'daily')   renderDailyLog();
   if (page === 'library') renderLibrary();
-  if (page === 'profile') { loadProfile(); renderCharts(); renderThemePicker(); }
+  if (page === 'profile') { loadProfile(); renderCharts(); renderThemePicker(); loadCardToggles(); }
 }
 
 // ─── DATE NAV ────────────────────────────────────────────
@@ -211,14 +216,24 @@ function renderDailyLog() {
   document.getElementById('weight-val').textContent = data.weight ? data.weight + ' kg' : '—';
   document.getElementById('sleep-val').textContent  = data.sleep  ? data.sleep + ' hrs' : '—';
 
-  // Steps → calories burned (approx: steps * 0.04 kcal for average person)
+  // Steps → calories burned (profile-aware)
   const stepsEl = document.getElementById('steps-burned');
   if (data.steps && data.steps > 0) {
-    const burned = Math.round(data.steps * 0.04);
-    stepsEl.textContent = `≈ ${burned} kcal burned`;
+    stepsEl.textContent = `≈ ${calcStepCalories(data.steps)} kcal`;
   } else {
     stepsEl.textContent = '';
   }
+
+  // Card visibility
+  const extrasEnabled   = getCardEnabled('extras');
+  const exerciseEnabled = getCardEnabled('exercise');
+  const clEnabled       = getCardEnabled('checklist');
+  document.getElementById('card-extras').style.display    = extrasEnabled   ? '' : 'none';
+  document.getElementById('card-exercise').style.display  = exerciseEnabled ? '' : 'none';
+  document.getElementById('card-checklist').style.display = clEnabled       ? '' : 'none';
+  if (extrasEnabled)   initCardCollapse('extras');
+  if (exerciseEnabled) { initCardCollapse('exercise');  renderExerciseCard(); }
+  if (clEnabled)       { initCardCollapse('checklist'); renderChecklistCard(); }
 }
 
 let mealEditMode = 'grams';
@@ -1107,8 +1122,13 @@ function updateFood() {
 
 // ─── KEYBOARD ────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeModalDirect(); closeLogModalDirect(); closeCalendarDirect(); closeEditMealModalDirect(); closeTutorialDirect(); }
-  if (e.key==='Enter' && e.target.closest('#add-section')) saveFood();
+  if (e.key === 'Escape') {
+    closeModalDirect(); closeLogModalDirect(); closeCalendarDirect();
+    closeEditMealModalDirect(); closeTutorialDirect();
+    ['add-ex-overlay','edit-ex-overlay','add-cl-overlay','edit-cl-overlay']
+      .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+  }
+  if (e.key === 'Enter' && e.target.closest('#add-section')) saveFood();
 });
 
 // ─── TUTORIAL ────────────────────────────────────────────
@@ -1148,6 +1168,458 @@ function renderTutStep() {
   const next = document.getElementById('tut-next');
   prev.style.visibility = tutStep === 0 ? 'hidden' : 'visible';
   next.textContent = tutStep === TUT_STEPS - 1 ? 'Get Started' : 'Next';
+}
+
+// ─── PROFILE-AWARE CALORIE HELPERS ──────────────────────
+function getProfileForCalc() {
+  const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
+  return {
+    weight: parseFloat(p.weight) || 70,
+    height: parseFloat(p.height) || 170,
+    gender: p.gender || '',
+  };
+}
+
+function calcStepCalories(steps) {
+  const { weight, height, gender } = getProfileForCalc();
+  const strideMult = gender === 'female' ? 0.413 : 0.415;
+  const strideLenM = (height / 100) * strideMult;
+  const distKm = (steps * strideLenM) / 1000;
+  const timeHr = distKm / 5.0;
+  let cal = 3.5 * weight * timeHr;
+  if (gender === 'female') cal *= 0.95;
+  return Math.round(cal);
+}
+
+function calcExCals(ex, totalUnits) {
+  const { weight, gender } = getProfileForCalc();
+  const totalSecs = ex.type === 'reps' ? totalUnits * (ex.secPerUnit || 2.5) : totalUnits;
+  const hrs = totalSecs / 3600;
+  let cal = (ex.met || 4.0) * weight * hrs;
+  if (gender === 'female') cal *= 0.92;
+  return Math.round(cal);
+}
+
+// ─── CARD TOGGLE SYSTEM ─────────────────────────────────
+function getCardEnabled(name) {
+  return localStorage.getItem('eatshimo_card_' + name) !== 'false';
+}
+
+function saveCardToggle(name, checkbox) {
+  localStorage.setItem('eatshimo_card_' + name, checkbox.checked ? 'true' : 'false');
+  renderDailyLog();
+  if (name === 'extras') updateExtrasChartsVisibility();
+}
+
+function loadCardToggles() {
+  ['extras','exercise','checklist'].forEach(name => {
+    const el = document.getElementById('toggle-' + name);
+    if (el) el.checked = getCardEnabled(name);
+  });
+  updateExtrasChartsVisibility();
+}
+
+function updateExtrasChartsVisibility() {
+  const show = getCardEnabled('extras');
+  ['water','steps','sleep'].forEach(name => {
+    const el = document.getElementById('profile-chart-' + name);
+    if (el) el.style.display = show ? '' : 'none';
+  });
+  const wt = document.getElementById('profile-chart-weight');
+  if (wt) wt.style.display = show ? '' : 'none';
+}
+
+// ─── ASK AI FOR EXERCISE SUGGESTIONS ────────────────────
+function openAskAI() {
+  const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
+  const parts = [];
+  if (p.age)    parts.push(`${p.age} years old`);
+  if (p.gender) parts.push(p.gender);
+  if (p.height) parts.push(`${p.height} cm tall`);
+  if (p.weight) parts.push(`${p.weight} kg`);
+  const actLabels = { sedentary: 'sedentary', light: 'lightly active', moderate: 'moderately active', active: 'active', very_active: 'very active' };
+  if (p.activity && actLabels[p.activity]) parts.push(`${actLabels[p.activity]} lifestyle`);
+
+  const noEquip = document.getElementById('ex-no-equipment')?.checked ?? true;
+  const equipment = noEquip ? 'no equipment (bodyweight only)' : 'basic gym equipment available';
+  const who = parts.length ? `a ${parts.join(', ')}` : 'someone';
+
+  const prompt = `Suggest 5 exercises for ${who}, with ${equipment}. For each, give: name, type (reps or timed in seconds), a one-line description, and a recommended daily goal. Format as a numbered list.`;
+
+  // Copy to clipboard as fallback, then open ChatGPT
+  navigator.clipboard?.writeText(prompt).catch(() => {});
+  window.open('https://chatgpt.com/?q=' + encodeURIComponent(prompt), '_blank');
+}
+
+// ─── COLLAPSIBLE CARDS ──────────────────────────────────
+function toggleCardCollapse(card) {
+  const body = document.getElementById('body-' + card);
+  const chevron = document.getElementById('chevron-' + card);
+  const isCollapsed = body.style.display === 'none';
+  body.style.display = isCollapsed ? '' : 'none';
+  chevron.textContent = isCollapsed ? '▲' : '▼';
+  localStorage.setItem('eatshimo_' + card + '_collapsed', isCollapsed ? 'false' : 'true');
+}
+
+function initCardCollapse(card) {
+  const body = document.getElementById('body-' + card);
+  const chevron = document.getElementById('chevron-' + card);
+  if (!body || !chevron) return;
+  const collapsed = localStorage.getItem('eatshimo_' + card + '_collapsed') === 'true';
+  body.style.display = collapsed ? 'none' : '';
+  chevron.textContent = collapsed ? '▼' : '▲';
+}
+
+// ─── EXERCISE TRACKER ───────────────────────────────────
+const DEFAULT_EX_LIB = [
+  { id: 'pushup', name: 'Pushup', type: 'reps', goal: 0, met: 3.8, secPerUnit: 2 },
+  { id: 'plank',  name: 'Plank',  type: 'secs', goal: 0, met: 3.0, secPerUnit: 1 },
+  { id: 'squat',  name: 'Squat',  type: 'reps', goal: 0, met: 5.0, secPerUnit: 3 },
+];
+
+function getExLib() {
+  const stored = localStorage.getItem('eatshimo_ex_lib');
+  return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_EX_LIB));
+}
+function saveExLib(lib) { localStorage.setItem('eatshimo_ex_lib', JSON.stringify(lib)); }
+
+// Active list: [{id, days:[0-6 Sun=0], activeSince:'YYYY-MM-DD'|null}]
+// Transparently migrates old string-array format
+function getActiveExList() {
+  const raw = JSON.parse(localStorage.getItem('eatshimo_active_ex') || '[]');
+  return raw.map(item =>
+    typeof item === 'string'
+      ? { id: item, days: [0,1,2,3,4,5,6], activeSince: null }
+      : item
+  );
+}
+function saveActiveExList(list) { localStorage.setItem('eatshimo_active_ex', JSON.stringify(list)); }
+
+// Day picker helpers
+function toggleDayBtn(btn) { btn.classList.toggle('active'); btn.blur(); }
+
+function getPickerDays(pickerId) {
+  const days = [];
+  document.querySelectorAll('#' + pickerId + ' .day-btn.active').forEach(btn => {
+    days.push(parseInt(btn.dataset.day));
+  });
+  return days.length > 0 ? days : [0,1,2,3,4,5,6];
+}
+
+function setPickerDays(pickerId, days) {
+  document.querySelectorAll('#' + pickerId + ' .day-btn').forEach(btn => {
+    btn.classList.toggle('active', days.includes(parseInt(btn.dataset.day)));
+  });
+}
+
+function renderExerciseCard() {
+  const lib = getExLib();
+  const activeList = getActiveExList();
+  const key = dateStr(currentDate);
+  const data = getDayData(key);
+  const exercises = data.exercises || {};
+  const list = document.getElementById('exercise-list');
+  if (!list) return;
+
+  const dayOfWeek = currentDate.getDay();
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const applicable = activeList.filter(entry => {
+    const daysOk = !entry.days || entry.days.length === 0 || entry.days.includes(dayOfWeek);
+    const dateOk = !entry.activeSince || key >= entry.activeSince;
+    return daysOk && dateOk;
+  });
+
+  if (applicable.length === 0) {
+    const hasAny = activeList.length > 0;
+    list.innerHTML = `<p class="empty-msg" style="padding:12px 0 4px;">${hasAny ? 'No exercises scheduled for ' + DAY_NAMES[dayOfWeek] + '.' : 'No exercises added yet. Tap "+ Add Exercise" below.'}</p>`;
+    return;
+  }
+
+  list.innerHTML = applicable.map(entry => {
+    const ex = lib.find(e => e.id === entry.id);
+    if (!ex) return '';
+    const sets = (exercises[ex.id] || {}).sets || [];
+    const total = sets.reduce((a, b) => a + b, 0);
+    const kcal = total > 0 ? calcExCals(ex, total) : 0;
+    const unit = ex.type === 'reps' ? 'reps' : 'sec';
+    const goal = ex.goal > 0;
+    const progress = goal ? Math.min(100, Math.round((total / ex.goal) * 100)) : 0;
+    const goalText = goal ? `/ ${ex.goal} ${unit}` : '';
+    const allDays = !entry.days || entry.days.length === 7;
+    const dayTags = allDays ? '' : (entry.days || []).sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
+    return `
+    <div class="ex-item">
+      <div class="ex-header">
+        <div class="ex-name-row">
+          <span class="ex-name">${ex.name}</span>
+          <span class="ex-type-badge">${ex.type === 'reps' ? 'Reps' : 'Secs'}</span>
+          ${dayTags ? `<span class="ex-day-tags">${dayTags}</span>` : ''}
+        </div>
+        <button class="btn-ex-settings" onclick="openEditExModal('${ex.id}')">⚙</button>
+      </div>
+      ${goal ? `<div class="ex-progress-bar-wrap"><div class="ex-progress-bar" style="width:${progress}%"></div></div>` : ''}
+      <div class="ex-summary">
+        ${sets.length > 0
+          ? `<span class="ex-sets-display">${sets.join(' · ')} = <strong>${total}</strong> ${unit} ${goalText}</span>`
+          : `<span class="ex-sets-display" style="color:var(--text-dim);">No sets logged yet ${goalText ? '(' + ex.goal + ' ' + unit + ')' : ''}</span>`}
+        ${kcal > 0 ? `<span class="ex-kcal">≈ ${kcal} kcal</span>` : ''}
+      </div>
+      <div class="ex-log-row">
+        <input type="number" class="ex-input" id="ex-input-${ex.id}" placeholder="${ex.type === 'reps' ? 'reps' : 'secs'}" min="1" />
+        <button class="btn-log-set" onclick="logExSet('${ex.id}')">Log Set</button>
+        ${sets.length > 0 ? `<button class="btn-remove-set" onclick="removeLastExSet('${ex.id}')">Undo</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function logExSet(exId) {
+  const input = document.getElementById('ex-input-' + exId);
+  const val = parseFloat(input.value);
+  if (!val || val <= 0) return;
+  const key = dateStr(currentDate), data = getDayData(key);
+  if (!data.exercises[exId]) data.exercises[exId] = { sets: [] };
+  data.exercises[exId].sets.push(val);
+  saveDayData(key, data);
+  input.value = '';
+  renderExerciseCard();
+}
+
+function removeLastExSet(exId) {
+  const key = dateStr(currentDate), data = getDayData(key);
+  if (data.exercises[exId] && data.exercises[exId].sets.length > 0) {
+    data.exercises[exId].sets.pop();
+    saveDayData(key, data);
+  }
+  renderExerciseCard();
+}
+
+// Add Exercise Modal
+function openAddExModal() {
+  setPickerDays('new-ex-days', [0,1,2,3,4,5,6]);
+  const pastCb = document.getElementById('ex-apply-past');
+  if (pastCb) pastCb.checked = false;
+  renderAddExModal();
+  document.getElementById('add-ex-overlay').classList.remove('hidden');
+}
+function closeAddExModal() {
+  document.getElementById('add-ex-overlay').classList.add('hidden');
+  document.getElementById('new-ex-name').value = '';
+  document.getElementById('new-ex-goal').value = '';
+  renderExerciseCard();
+}
+
+function renderAddExModal() {
+  const lib = getExLib();
+  const activeList = getActiveExList();
+  const activeIds = activeList.map(e => e.id);
+  const available = lib.filter(e => !activeIds.includes(e.id));
+  const active = activeList.map(e => lib.find(l => l.id === e.id)).filter(Boolean);
+
+  document.getElementById('add-ex-preset-list').innerHTML =
+    available.length > 0
+      ? available.map(ex => `<button class="ex-preset-btn" onclick="activateExercise('${ex.id}')">${ex.name} <span class="ex-type-badge">${ex.type === 'reps' ? 'Reps' : 'Secs'}</span></button>`).join('')
+      : '<p style="font-size:12px;color:var(--text-dim);padding:8px 0;">All exercises are already tracking.</p>';
+
+  document.getElementById('add-ex-active-list').innerHTML =
+    active.length > 0
+      ? active.map(ex => `<button class="ex-active-btn" onclick="deactivateExercise('${ex.id}')" title="Tap to remove">${ex.name} ✕</button>`).join('')
+      : '<p style="font-size:12px;color:var(--text-dim);padding:4px 0;">None tracking yet.</p>';
+}
+
+function activateExercise(exId) {
+  const list = getActiveExList();
+  if (!list.find(e => e.id === exId)) {
+    const days = getPickerDays('new-ex-days');
+    const applyPast = document.getElementById('ex-apply-past')?.checked;
+    list.push({ id: exId, days, activeSince: applyPast ? null : dateStr(currentDate) });
+    saveActiveExList(list);
+  }
+  renderAddExModal();
+}
+
+function deactivateExercise(exId) {
+  saveActiveExList(getActiveExList().filter(e => e.id !== exId));
+  renderAddExModal();
+}
+
+function addCustomExercise() {
+  const name = document.getElementById('new-ex-name').value.trim();
+  const type = document.getElementById('new-ex-type').value;
+  const goal = parseInt(document.getElementById('new-ex-goal').value) || 0;
+  if (!name) { alert('Please enter a name.'); return; }
+  const lib = getExLib();
+  const id = 'ex_' + Date.now();
+  lib.push({ id, name, type, goal, met: type === 'reps' ? 4.0 : 3.5, secPerUnit: type === 'reps' ? 2.5 : 1 });
+  saveExLib(lib);
+  const days = getPickerDays('new-ex-days');
+  const applyPast = document.getElementById('ex-apply-past')?.checked;
+  const list = getActiveExList();
+  list.push({ id, days, activeSince: applyPast ? null : dateStr(currentDate) });
+  saveActiveExList(list);
+  document.getElementById('new-ex-name').value = '';
+  document.getElementById('new-ex-goal').value = '';
+  renderAddExModal();
+}
+
+// Edit Exercise Modal
+let editExId = null;
+
+function openEditExModal(exId) {
+  editExId = exId;
+  const ex = getExLib().find(e => e.id === exId);
+  if (!ex) return;
+  document.getElementById('edit-ex-name').value = ex.name;
+  document.getElementById('edit-ex-goal').value = ex.goal || '';
+  const entry = getActiveExList().find(e => e.id === exId);
+  setPickerDays('edit-ex-days', entry?.days || [0,1,2,3,4,5,6]);
+  document.getElementById('edit-ex-overlay').classList.remove('hidden');
+}
+
+function saveEditEx() {
+  const lib = getExLib();
+  const idx = lib.findIndex(e => e.id === editExId);
+  if (idx === -1) return;
+  const name = document.getElementById('edit-ex-name').value.trim();
+  if (name) lib[idx].name = name;
+  lib[idx].goal = parseInt(document.getElementById('edit-ex-goal').value) || 0;
+  saveExLib(lib);
+  const list = getActiveExList();
+  const entryIdx = list.findIndex(e => e.id === editExId);
+  if (entryIdx !== -1) list[entryIdx].days = getPickerDays('edit-ex-days');
+  saveActiveExList(list);
+  document.getElementById('edit-ex-overlay').classList.add('hidden');
+  renderExerciseCard();
+}
+
+function deleteExFromTracker() {
+  if (!confirm('Remove this exercise from the tracker? (History kept.)')) return;
+  saveActiveExList(getActiveExList().filter(e => e.id !== editExId));
+  document.getElementById('edit-ex-overlay').classList.add('hidden');
+  renderExerciseCard();
+}
+
+// ─── HEALTH ROUTINES CHECKLIST ──────────────────────────
+function getCLItems() {
+  const raw = JSON.parse(localStorage.getItem('eatshimo_checklist') || '[]');
+  // Migrate old format (no days/activeSince)
+  return raw.map(item => ({
+    days: [0,1,2,3,4,5,6],
+    activeSince: null,
+    ...item,
+  }));
+}
+function saveCLItems(items) { localStorage.setItem('eatshimo_checklist', JSON.stringify(items)); }
+
+function renderChecklistCard() {
+  const items = getCLItems();
+  const key = dateStr(currentDate);
+  const data = getDayData(key);
+  const checks = data.checklist || {};
+  const list = document.getElementById('checklist-list');
+  if (!list) return;
+
+  const dayOfWeek = currentDate.getDay();
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const applicable = items.filter(item => {
+    const daysOk = !item.days || item.days.length === 0 || item.days.includes(dayOfWeek);
+    const dateOk = !item.activeSince || key >= item.activeSince;
+    return daysOk && dateOk;
+  });
+
+  if (items.length === 0) {
+    list.innerHTML = '<p class="empty-msg" style="padding:12px 0 4px;">No routines added yet. Tap "+ Add Routine" below.</p>';
+    return;
+  }
+  if (applicable.length === 0) {
+    list.innerHTML = `<p class="empty-msg" style="padding:12px 0 4px;">No routines scheduled for ${DAY_NAMES[dayOfWeek]}.</p>`;
+    return;
+  }
+
+  list.innerHTML = applicable.map(item => {
+    const checked = checks[item.id] || 0;
+    const allDays = !item.days || item.days.length === 7;
+    const dayTags = allDays ? '' :
+      (item.days || []).sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
+    const boxes = Array.from({ length: item.count }, (_, i) =>
+      `<button class="cl-box${i < checked ? ' checked' : ''}" onclick="toggleCLBox('${item.id}',${i})">${i < checked ? '✓' : ''}</button>`
+    ).join('');
+    return `
+    <div class="cl-item">
+      <div class="cl-item-content">
+        <div>
+          <span class="cl-name">${item.name}</span>
+          ${dayTags ? `<span class="ex-day-tags" style="margin-left:6px;">${dayTags}</span>` : ''}
+        </div>
+        <div class="cl-boxes">${boxes}</div>
+      </div>
+      <button class="btn-cl-edit" onclick="openEditCLModal('${item.id}')">Edit</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleCLBox(itemId, boxIndex) {
+  const key = dateStr(currentDate), data = getDayData(key);
+  const cur = data.checklist[itemId] || 0;
+  data.checklist[itemId] = cur === boxIndex + 1 ? boxIndex : boxIndex + 1;
+  saveDayData(key, data);
+  renderChecklistCard();
+}
+
+function openAddCLModal() {
+  document.getElementById('new-cl-name').value = '';
+  document.getElementById('new-cl-count').value = '1';
+  setPickerDays('new-cl-days', [0,1,2,3,4,5,6]);
+  const pastCb = document.getElementById('cl-apply-past');
+  if (pastCb) pastCb.checked = false;
+  document.getElementById('add-cl-overlay').classList.remove('hidden');
+}
+
+function saveNewCL() {
+  const name = document.getElementById('new-cl-name').value.trim();
+  const count = Math.min(5, Math.max(1, parseInt(document.getElementById('new-cl-count').value) || 1));
+  if (!name) { alert('Please enter a routine name.'); return; }
+  const days = getPickerDays('new-cl-days');
+  const applyPast = document.getElementById('cl-apply-past')?.checked;
+  const items = getCLItems();
+  items.push({ id: 'cl_' + Date.now(), name, count, days, activeSince: applyPast ? null : dateStr(currentDate) });
+  saveCLItems(items);
+  document.getElementById('add-cl-overlay').classList.add('hidden');
+  renderChecklistCard();
+}
+
+let editCLId = null;
+
+function openEditCLModal(itemId) {
+  editCLId = itemId;
+  const item = getCLItems().find(i => i.id === itemId);
+  if (!item) return;
+  document.getElementById('edit-cl-name').value = item.name;
+  document.getElementById('edit-cl-count').value = item.count;
+  setPickerDays('edit-cl-days', item.days || [0,1,2,3,4,5,6]);
+  document.getElementById('edit-cl-overlay').classList.remove('hidden');
+}
+
+function saveEditCL() {
+  const items = getCLItems();
+  const idx = items.findIndex(i => i.id === editCLId);
+  if (idx === -1) return;
+  const name = document.getElementById('edit-cl-name').value.trim();
+  if (name) items[idx].name = name;
+  items[idx].count = Math.min(5, Math.max(1, parseInt(document.getElementById('edit-cl-count').value) || 1));
+  items[idx].days = getPickerDays('edit-cl-days');
+  saveCLItems(items);
+  document.getElementById('edit-cl-overlay').classList.add('hidden');
+  renderChecklistCard();
+}
+
+function deleteCLItem() {
+  if (!confirm('Delete this routine?')) return;
+  saveCLItems(getCLItems().filter(i => i.id !== editCLId));
+  document.getElementById('edit-cl-overlay').classList.add('hidden');
+  renderChecklistCard();
 }
 
 // ─── INIT ────────────────────────────────────────────────
