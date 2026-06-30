@@ -408,13 +408,15 @@ button:active { transform: scale(0.97); }
 
 /* ─── MODALS ─── */
 #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
-#add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay {
+#add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay,
+#foodcat-overlay, #editcooldown-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center;
   padding: 16px; z-index: 100; backdrop-filter: blur(6px);
 }
 #modal-overlay.hidden, #log-modal-overlay.hidden, #edit-meal-overlay.hidden, #cal-overlay.hidden, #tutorial-overlay.hidden,
-#add-ex-overlay.hidden, #edit-ex-overlay.hidden, #add-cl-overlay.hidden, #edit-cl-overlay.hidden { display: none; }
+#add-ex-overlay.hidden, #edit-ex-overlay.hidden, #add-cl-overlay.hidden, #edit-cl-overlay.hidden,
+#foodcat-overlay.hidden, #editcooldown-overlay.hidden { display: none; }
 
 .modal {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
@@ -600,7 +602,8 @@ footer {
 
   /* Modals — slide up from bottom on mobile */
   #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
-  #add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay {
+  #add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay,
+  #foodcat-overlay, #editcooldown-overlay {
     align-items: flex-end;
     padding: 0;
   }
@@ -713,6 +716,19 @@ footer {
 .btn-remove-set:hover { background: var(--danger-dim); color: var(--danger); opacity: 1; box-shadow: none; }
 .btn-add-card-item { width: 100%; margin-top: 12px; background: var(--accent-dim); color: var(--text); border: 1px solid var(--input-border); box-shadow: none; font-size: 13px; font-weight: 500; }
 .btn-add-card-item:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.card-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.card-btn-row .btn-add-card-item { margin-top: 0; flex: 1; }
+.btn-once { background: transparent; border: 1px dashed var(--border-lite); color: var(--text-mid); }
+.btn-once:hover { background: var(--accent-dim); color: var(--text); border-color: var(--border); }
+
+/* ─── RECURRENCE SECTION ─── */
+.rec-section { display: flex; flex-direction: column; gap: 10px; margin-top: 2px; }
+.rec-row { display: flex; flex-direction: column; gap: 6px; }
+.rec-label { font-size: 12px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .05em; }
+.interval-row { display: flex; align-items: center; gap: 8px; }
+.interval-input { width: 64px; padding: 7px 10px; font-size: 14px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; }
+.interval-input:focus { outline: none; border-color: var(--border); box-shadow: 0 0 0 3px var(--accent-dim); }
+.interval-unit { font-size: 13px; color: var(--text-mid); font-weight: 500; }
 
 /* Add exercise modal chips */
 .ex-preset-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--input-border); border-radius: 8px; padding: 7px 12px; margin: 3px; font-size: 13px; font-weight: 500; box-shadow: none; }
@@ -808,3 +824,72 @@ footer {
 @media (orientation: landscape) and (max-width: 900px) {
   #rotate-overlay { display: flex; }
 }
+/* ─── DELETE OPTIONS PANEL ─── */
+.delete-panel {
+  margin-top: 14px; padding: 14px; border-radius: 10px;
+  background: var(--danger-dim); border: 1px solid rgba(192,82,58,0.2);
+}
+.delete-panel-title { font-size: 13px; font-weight: 600; color: var(--danger); margin-bottom: 10px; }
+.delete-panel-btns { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+.btn-delete-opt {
+  background: var(--surface); color: var(--text); border: 1px solid var(--input-border);
+  border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 500;
+  text-align: left; box-shadow: none;
+}
+.btn-delete-opt:hover { background: var(--danger); color: #fff; border-color: var(--danger); opacity: 1; box-shadow: none; }
+.btn-delete-all { border-color: var(--danger); color: var(--danger); }
+.btn-delete-cancel {
+  background: transparent; color: var(--text-dim); border: none; font-size: 13px;
+  box-shadow: none; padding: 4px 0; width: 100%; text-align: center;
+}
+.btn-delete-cancel:hover { color: var(--text); opacity: 1; box-shadow: none; }
+
+/* ─── FASTING TRACKER ─── */
+.fasting-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.fast-preset-btn { background: var(--bg); color: var(--text-mid); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; box-shadow: none; transition: all 0.12s; }
+.fast-preset-btn.active { background: var(--border); border-color: var(--border); color: #fff; }
+.fast-preset-btn:hover { border-color: var(--border); opacity: 1; box-shadow: none; }
+.fasting-custom-row { display: flex; gap: 12px; margin-bottom: 12px; }
+.fasting-field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.fasting-field label { font-size: 11px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .05em; }
+.fasting-field input { padding: 7px 10px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; font-size: 14px; }
+.fasting-time-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.fasting-time-label { font-size: 13px; font-weight: 500; color: var(--text-mid); }
+.fasting-time-row input[type="time"] { padding: 7px 10px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; font-size: 14px; }
+.fasting-window-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
+.fasting-status-box { border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+.fasting-active { background: rgba(91,44,139,0.08); border: 1px solid rgba(91,44,139,0.2); }
+.eating-active  { background: rgba(30,107,69,0.08);  border: 1px solid rgba(30,107,69,0.2); }
+.fasting-phase-label { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.fasting-remaining { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.fasting-bar-wrap { height: 6px; background: var(--accent-dim); border-radius: 6px; margin-bottom: 5px; overflow: hidden; }
+.fasting-bar { height: 100%; background: var(--border); border-radius: 6px; transition: width 0.5s; }
+.fasting-pct { font-size: 11px; color: var(--text-dim); }
+
+/* ─── FOOD MODERATOR ─── */
+.foodmod-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.foodmod-setting-label { font-size: 13px; font-weight: 500; color: var(--text-mid); }
+.foodmod-setting-row select { font-size: 12px; padding: 6px 10px; border-radius: 8px; }
+.foodmod-item { background: var(--bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 11px 13px; margin-bottom: 8px; }
+.foodmod-item:last-of-type { margin-bottom: 0; }
+.foodmod-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.foodmod-cat-name { font-size: 14px; font-weight: 600; color: var(--text); display: block; margin-bottom: 2px; }
+.foodmod-cooldown-default { font-size: 11px; color: var(--text-dim); }
+.foodmod-status { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
+.status-ready   { background: rgba(30,107,69,0.1);  color: #1e6b45; }
+.status-cooling { background: rgba(192,82,58,0.1);  color: var(--danger); }
+.foodmod-actions { display: flex; gap: 6px; }
+.btn-foodmod-action { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 5px 12px; font-size: 12px; font-weight: 500; box-shadow: none; }
+.btn-foodmod-action:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.foodcat-selected-chips { display: none; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.foodcat-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--border); color: #fff; border-radius: 999px;
+  padding: 5px 6px 5px 12px; font-size: 12px; font-weight: 600;
+}
+.foodcat-chip button {
+  background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 50%;
+  width: 18px; height: 18px; font-size: 10px; line-height: 1; padding: 0;
+  box-shadow: none; display: flex; align-items: center; justify-content: center;
+}
+.foodcat-chip button:hover { background: rgba(255,255,255,0.35); opacity: 1; box-shadow: none; }

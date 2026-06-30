@@ -234,6 +234,15 @@ function renderDailyLog() {
   if (extrasEnabled)   initCardCollapse('extras');
   if (exerciseEnabled) { initCardCollapse('exercise');  renderExerciseCard(); }
   if (clEnabled)       { initCardCollapse('checklist'); renderChecklistCard(); }
+  // Fasting card
+  const fastingEnabled = getCardEnabled('fasting');
+  const foodmodEnabled = getCardEnabled('foodmod');
+  const fastEl = document.getElementById('card-fasting');
+  const foodEl = document.getElementById('card-foodmod');
+  if (fastEl) fastEl.style.display = fastingEnabled ? '' : 'none';
+  if (foodEl) foodEl.style.display = foodmodEnabled ? '' : 'none';
+  if (fastingEnabled) { initCardCollapse('fasting'); renderFastingCard(); }
+  if (foodmodEnabled) { initCardCollapse('foodmod'); renderFoodModCard(); }
 }
 
 let mealEditMode = 'grams';
@@ -474,6 +483,7 @@ function confirmLogMeal() {
   const key = dateStr(currentDate), data = getDayData(key);
   data.meals.push(entry);
   saveDayData(key, data);
+  checkFoodModerator(f.name);
   renderDailyLog();
   closeLogModalDirect();
 }
@@ -510,7 +520,7 @@ function renderCalendar() {
     else if(ds===todayStr) cls+=' today';
     if(isFuture) cls+=' future';
     if(hasData&&ds!==selectedStr) cls+=' has-data';
-    html+=`<span class="${cls}" onclick="${isFuture?'':`pickCalDay('${ds}')`}">${d}</span>`;
+    html+=`<span class="${cls}" onclick="pickCalDay('${ds}')">${d}</span>`;
   }
   document.getElementById('cal-grid').innerHTML=html;
 }
@@ -1125,7 +1135,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModalDirect(); closeLogModalDirect(); closeCalendarDirect();
     closeEditMealModalDirect(); closeTutorialDirect();
-    ['add-ex-overlay','edit-ex-overlay','add-cl-overlay','edit-cl-overlay']
+    ['add-ex-overlay','edit-ex-overlay','add-cl-overlay','edit-cl-overlay','foodcat-overlay','editcooldown-overlay']
       .forEach(id => document.getElementById(id)?.classList.add('hidden'));
   }
   if (e.key === 'Enter' && e.target.closest('#add-section')) saveFood();
@@ -1192,6 +1202,7 @@ function calcStepCalories(steps) {
 }
 
 function calcExCals(ex, totalUnits) {
+  if (ex.calsPerUnit && ex.calsPerUnit > 0) return Math.round(ex.calsPerUnit * totalUnits);
   const { weight, gender } = getProfileForCalc();
   const totalSecs = ex.type === 'reps' ? totalUnits * (ex.secPerUnit || 2.5) : totalUnits;
   const hrs = totalSecs / 3600;
@@ -1212,7 +1223,7 @@ function saveCardToggle(name, checkbox) {
 }
 
 function loadCardToggles() {
-  ['extras','exercise','checklist'].forEach(name => {
+  ['extras','exercise','checklist','fasting','foodmod'].forEach(name => {
     const el = document.getElementById('toggle-' + name);
     if (el) el.checked = getCardEnabled(name);
   });
@@ -1270,6 +1281,153 @@ function initCardCollapse(card) {
   chevron.textContent = collapsed ? '▼' : '▲';
 }
 
+// ─── RECURRENCE SYSTEM ──────────────────────────────────
+function recurrenceAppliesOnDate(rec, dateString) {
+  if (!rec) return true;
+  // Hard exclusions
+  if (rec.endDate && dateString > rec.endDate) return false;
+  if (rec.exceptions && rec.exceptions.includes(dateString)) return false;
+  const date = new Date(dateString + 'T00:00:00');
+  const dow  = date.getDay(); // 0=Sun
+
+  switch (rec.type) {
+    case 'once':
+      return dateString === rec.date;
+
+    case 'weekly': {
+      if (rec.activeSince && dateString < rec.activeSince) return false;
+      return !rec.days || rec.days.length === 0 || rec.days.includes(dow);
+    }
+
+    case 'every_x_weeks': {
+      if (rec.activeSince && dateString < rec.activeSince) return false;
+      if (!rec.days || !rec.days.includes(dow)) return false;
+      if (!rec.startDate) return true;
+      const start = new Date(rec.startDate + 'T00:00:00');
+      const startMon = new Date(start); startMon.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+      const curMon   = new Date(date);  curMon.setDate(date.getDate()   - ((date.getDay()  + 6) % 7));
+      const diffW = Math.round((curMon - startMon) / (7 * 864e5));
+      return diffW >= 0 && diffW % (rec.interval || 1) === 0;
+    }
+
+    case 'every_x_months': {
+      if (rec.activeSince && dateString < rec.activeSince) return false;
+      if (!rec.startDate) return true;
+      const start = new Date(rec.startDate + 'T00:00:00');
+      if (date.getDate() !== start.getDate()) return false;
+      const mDiff = (date.getFullYear() - start.getFullYear()) * 12 + (date.getMonth() - start.getMonth());
+      return mDiff >= 0 && mDiff % (rec.interval || 1) === 0;
+    }
+
+    case 'every_x_years': {
+      if (rec.activeSince && dateString < rec.activeSince) return false;
+      if (!rec.startDate) return true;
+      const start = new Date(rec.startDate + 'T00:00:00');
+      if (date.getMonth() !== start.getMonth() || date.getDate() !== start.getDate()) return false;
+      const yDiff = date.getFullYear() - start.getFullYear();
+      return yDiff >= 0 && yDiff % (rec.interval || 1) === 0;
+    }
+
+    case 'every_x_days': {
+      if (rec.activeSince && dateString < rec.activeSince) return false;
+      if (!rec.startDate) return true;
+      const start = new Date(rec.startDate + 'T00:00:00');
+      const diffDays = Math.round((date - start) / 864e5);
+      return diffDays >= 0 && diffDays % (rec.interval || 1) === 0;
+    }
+
+    default: return true;
+  }
+}
+
+function updateRecurrenceUI(prefix) {
+  const type = document.getElementById(prefix + '-recurrence').value;
+  const showDays     = type === 'weekly' || type === 'every_x_weeks';
+  const showInterval = type === 'every_x_weeks' || type === 'every_x_months' || type === 'every_x_years' || type === 'every_x_days';
+  const showPast     = type !== 'once';
+  const units = { every_x_weeks: 'weeks', every_x_months: 'months', every_x_years: 'years', every_x_days: 'days' };
+  const daysRow = document.getElementById(prefix + '-days-row');
+  const intRow  = document.getElementById(prefix + '-interval-row');
+  const pastRow = document.getElementById(prefix + '-past-row');
+  if (daysRow) daysRow.style.display = showDays     ? '' : 'none';
+  if (intRow)  intRow.style.display  = showInterval ? '' : 'none';
+  if (pastRow) pastRow.style.display = showPast     ? '' : 'none';
+  const unitEl = document.getElementById(prefix + '-interval-unit');
+  if (unitEl && units[type]) unitEl.textContent = units[type];
+}
+
+function updateEndUI(prefix) {
+  const endType = document.getElementById(prefix + '-end-type')?.value || 'never';
+  const dateRow  = document.getElementById(prefix + '-end-date-row');
+  const countRow = document.getElementById(prefix + '-end-count-row');
+  const label    = document.getElementById(prefix + '-end-count-label');
+  if (dateRow)  dateRow.style.display  = endType === 'date'           ? '' : 'none';
+  if (countRow) countRow.style.display = (endType === 'occurrences' || endType === 'accomplishments') ? '' : 'none';
+  if (label) label.textContent = endType === 'accomplishments' ? 'After how many completions?' : 'After how many occurrences?';
+}
+
+function getRecurrenceFromModal(prefix) {
+  const sel  = document.getElementById(prefix + '-recurrence');
+  const type = sel ? sel.value : 'weekly';
+  const rec  = { type };
+  const today = dateStr(currentDate);
+  const applyPastEl = document.getElementById(prefix + '-apply-past');
+  const applyPast   = applyPastEl ? applyPastEl.checked : false;
+
+  if (type === 'once') {
+    rec.date = today;
+  } else {
+    rec.activeSince = applyPast ? null : today;
+    if (type === 'weekly') {
+      rec.days = getPickerDays(prefix + '-days-picker');
+    } else if (type === 'every_x_weeks') {
+      rec.days      = getPickerDays(prefix + '-days-picker');
+      rec.interval  = parseInt(document.getElementById(prefix + '-interval')?.value) || 1;
+      rec.startDate = today;
+    } else if (type === 'every_x_days') {
+      rec.interval  = parseInt(document.getElementById(prefix + '-interval')?.value) || 1;
+      rec.startDate = today;
+    } else if (type === 'every_x_months' || type === 'every_x_years') {
+      rec.interval  = parseInt(document.getElementById(prefix + '-interval')?.value) || 1;
+      rec.startDate = today;
+    }
+  }
+
+  // End condition
+  const endType = document.getElementById(prefix + '-end-type')?.value || 'never';
+  rec.endType = endType;
+  if (endType === 'date') {
+    rec.endDate = document.getElementById(prefix + '-end-date')?.value || null;
+  } else if (endType === 'occurrences') {
+    rec.endAfterOccurrences = parseInt(document.getElementById(prefix + '-end-count')?.value) || 0;
+  } else if (endType === 'accomplishments') {
+    rec.endAfterAccomplishments = parseInt(document.getElementById(prefix + '-end-count')?.value) || 0;
+  }
+
+  return rec;
+}
+
+function setRecurrenceToModal(prefix, rec) {
+  if (!rec) rec = { type: 'weekly', days: [0,1,2,3,4,5,6] };
+  const sel = document.getElementById(prefix + '-recurrence');
+  if (sel) sel.value = rec.type || 'weekly';
+  if (rec.days)     setPickerDays(prefix + '-days-picker', rec.days);
+  if (rec.interval) { const el = document.getElementById(prefix + '-interval'); if (el) el.value = rec.interval; }
+  updateRecurrenceUI(prefix);
+  // Restore end condition
+  const endType = rec.endType || 'never';
+  const endSel = document.getElementById(prefix + '-end-type');
+  if (endSel) endSel.value = endType;
+  if (endType === 'date' && rec.endDate) {
+    const el = document.getElementById(prefix + '-end-date'); if (el) el.value = rec.endDate;
+  } else if (endType === 'occurrences' && rec.endAfterOccurrences) {
+    const el = document.getElementById(prefix + '-end-count'); if (el) el.value = rec.endAfterOccurrences;
+  } else if (endType === 'accomplishments' && rec.endAfterAccomplishments) {
+    const el = document.getElementById(prefix + '-end-count'); if (el) el.value = rec.endAfterAccomplishments;
+  }
+  updateEndUI(prefix);
+}
+
 // ─── EXERCISE TRACKER ───────────────────────────────────
 const DEFAULT_EX_LIB = [
   { id: 'pushup', name: 'Pushup', type: 'reps', goal: 0, met: 3.8, secPerUnit: 2 },
@@ -1283,15 +1441,18 @@ function getExLib() {
 }
 function saveExLib(lib) { localStorage.setItem('eatshimo_ex_lib', JSON.stringify(lib)); }
 
-// Active list: [{id, days:[0-6 Sun=0], activeSince:'YYYY-MM-DD'|null}]
-// Transparently migrates old string-array format
+// Active list: [{id, recurrence:{...}}]
+// Transparently migrates old formats
 function getActiveExList() {
   const raw = JSON.parse(localStorage.getItem('eatshimo_active_ex') || '[]');
-  return raw.map(item =>
-    typeof item === 'string'
-      ? { id: item, days: [0,1,2,3,4,5,6], activeSince: null }
-      : item
-  );
+  return raw.map(item => {
+    if (typeof item === 'string')
+      return { id: item, recurrence: { type: 'weekly', days: [0,1,2,3,4,5,6], activeSince: null } };
+    // migrate old {id, days, activeSince} format
+    if (item.days !== undefined && !item.recurrence)
+      return { id: item.id, recurrence: { type: 'weekly', days: item.days, activeSince: item.activeSince } };
+    return item;
+  });
 }
 function saveActiveExList(list) { localStorage.setItem('eatshimo_active_ex', JSON.stringify(list)); }
 
@@ -1321,14 +1482,10 @@ function renderExerciseCard() {
   const list = document.getElementById('exercise-list');
   if (!list) return;
 
-  const dayOfWeek = currentDate.getDay();
   const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-  const applicable = activeList.filter(entry => {
-    const daysOk = !entry.days || entry.days.length === 0 || entry.days.includes(dayOfWeek);
-    const dateOk = !entry.activeSince || key >= entry.activeSince;
-    return daysOk && dateOk;
-  });
+  const applicable = activeList.filter(entry =>
+    recurrenceAppliesOnDate(entry.recurrence, key) && !exEntryHasEnded(entry, key)
+  );
 
   if (applicable.length === 0) {
     const hasAny = activeList.length > 0;
@@ -1346,8 +1503,14 @@ function renderExerciseCard() {
     const goal = ex.goal > 0;
     const progress = goal ? Math.min(100, Math.round((total / ex.goal) * 100)) : 0;
     const goalText = goal ? `/ ${ex.goal} ${unit}` : '';
-    const allDays = !entry.days || entry.days.length === 7;
-    const dayTags = allDays ? '' : (entry.days || []).sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
+    const r = entry.recurrence || {};
+    let dayTags = '';
+    if (r.type === 'once') dayTags = '<span class="ex-day-tag">Once</span>';
+    else if (r.type === 'every_x_weeks') dayTags = `<span class="ex-day-tag">Every ${r.interval||1}w</span>`;
+    else if (r.type === 'every_x_months') dayTags = `<span class="ex-day-tag">Every ${r.interval||1}mo</span>`;
+    else if (r.type === 'every_x_years') dayTags = `<span class="ex-day-tag">Every ${r.interval||1}yr</span>`;
+    else if (r.type === 'weekly' && r.days && r.days.length < 7)
+      dayTags = r.days.sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
     return `
     <div class="ex-item">
       <div class="ex-header">
@@ -1396,10 +1559,14 @@ function removeLastExSet(exId) {
 }
 
 // Add Exercise Modal
-function openAddExModal() {
-  setPickerDays('new-ex-days', [0,1,2,3,4,5,6]);
-  const pastCb = document.getElementById('ex-apply-past');
+function openAddExModal(defaultRec) {
+  const type = defaultRec || 'weekly';
+  const sel = document.getElementById('new-ex-recurrence');
+  if (sel) sel.value = type;
+  setPickerDays('new-ex-days-picker', [0,1,2,3,4,5,6]);
+  const pastCb = document.getElementById('new-ex-apply-past');
   if (pastCb) pastCb.checked = false;
+  updateRecurrenceUI('new-ex');
   renderAddExModal();
   document.getElementById('add-ex-overlay').classList.remove('hidden');
 }
@@ -1407,6 +1574,7 @@ function closeAddExModal() {
   document.getElementById('add-ex-overlay').classList.add('hidden');
   document.getElementById('new-ex-name').value = '';
   document.getElementById('new-ex-goal').value = '';
+  document.getElementById('new-ex-cals-per-unit').value = '';
   renderExerciseCard();
 }
 
@@ -1431,9 +1599,8 @@ function renderAddExModal() {
 function activateExercise(exId) {
   const list = getActiveExList();
   if (!list.find(e => e.id === exId)) {
-    const days = getPickerDays('new-ex-days');
-    const applyPast = document.getElementById('ex-apply-past')?.checked;
-    list.push({ id: exId, days, activeSince: applyPast ? null : dateStr(currentDate) });
+    const rec = getRecurrenceFromModal('new-ex');
+    list.push({ id: exId, recurrence: rec });
     saveActiveExList(list);
   }
   renderAddExModal();
@@ -1451,12 +1618,12 @@ function addCustomExercise() {
   if (!name) { alert('Please enter a name.'); return; }
   const lib = getExLib();
   const id = 'ex_' + Date.now();
-  lib.push({ id, name, type, goal, met: type === 'reps' ? 4.0 : 3.5, secPerUnit: type === 'reps' ? 2.5 : 1 });
+  const calsPerUnit = parseFloat(document.getElementById('new-ex-cals-per-unit').value) || 0;
+  lib.push({ id, name, type, goal, met: type === 'reps' ? 4.0 : 3.5, secPerUnit: type === 'reps' ? 2.5 : 1, calsPerUnit });
   saveExLib(lib);
-  const days = getPickerDays('new-ex-days');
-  const applyPast = document.getElementById('ex-apply-past')?.checked;
+  const rec = getRecurrenceFromModal('new-ex');
   const list = getActiveExList();
-  list.push({ id, days, activeSince: applyPast ? null : dateStr(currentDate) });
+  list.push({ id, recurrence: rec });
   saveActiveExList(list);
   document.getElementById('new-ex-name').value = '';
   document.getElementById('new-ex-goal').value = '';
@@ -1472,8 +1639,9 @@ function openEditExModal(exId) {
   if (!ex) return;
   document.getElementById('edit-ex-name').value = ex.name;
   document.getElementById('edit-ex-goal').value = ex.goal || '';
+  document.getElementById('edit-ex-cals-per-unit').value = ex.calsPerUnit || '';
   const entry = getActiveExList().find(e => e.id === exId);
-  setPickerDays('edit-ex-days', entry?.days || [0,1,2,3,4,5,6]);
+  setRecurrenceToModal('edit-ex', entry?.recurrence);
   document.getElementById('edit-ex-overlay').classList.remove('hidden');
 }
 
@@ -1484,31 +1652,132 @@ function saveEditEx() {
   const name = document.getElementById('edit-ex-name').value.trim();
   if (name) lib[idx].name = name;
   lib[idx].goal = parseInt(document.getElementById('edit-ex-goal').value) || 0;
+  lib[idx].calsPerUnit = parseFloat(document.getElementById('edit-ex-cals-per-unit').value) || 0;
   saveExLib(lib);
   const list = getActiveExList();
   const entryIdx = list.findIndex(e => e.id === editExId);
-  if (entryIdx !== -1) list[entryIdx].days = getPickerDays('edit-ex-days');
+  if (entryIdx !== -1) list[entryIdx].recurrence = getRecurrenceFromModal('edit-ex');
   saveActiveExList(list);
   document.getElementById('edit-ex-overlay').classList.add('hidden');
   renderExerciseCard();
 }
 
-function deleteExFromTracker() {
-  if (!confirm('Remove this exercise from the tracker? (History kept.)')) return;
-  saveActiveExList(getActiveExList().filter(e => e.id !== editExId));
+function prevDateStr(ds) {
+  const d = new Date(ds + 'T00:00:00'); d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// Count how many days rec applied from start up to (but not including) dateString
+function countOccurrences(rec, dateString) {
+  const startDs = rec.activeSince || rec.startDate || '2020-01-01';
+  if (dateString <= startDs) return 0;
+  let count = 0;
+  const recNoEnd = { ...rec, endDate: null, endAfterOccurrences: undefined, endAfterAccomplishments: undefined };
+  const start = new Date(startDs + 'T00:00:00');
+  const end   = new Date(dateString + 'T00:00:00');
+  for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+    if (recurrenceAppliesOnDate(recNoEnd, d.toISOString().slice(0, 10))) count++;
+  }
+  return count;
+}
+
+// Count days where exercise was actually completed (sets logged)
+function countExAccomplishments(exId, toDateString) {
+  let count = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('eatshimo_day_')) continue;
+    const ds = k.replace('eatshimo_day_', '');
+    if (ds >= toDateString) continue;
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (d?.exercises?.[exId]?.sets?.length > 0) count++;
+    } catch(e) {}
+  }
+  return count;
+}
+
+// Count habit completions (at least 1 checkbox ticked)
+function countCLAccomplishments(clId, toDateString) {
+  let count = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('eatshimo_day_')) continue;
+    const ds = k.replace('eatshimo_day_', '');
+    if (ds >= toDateString) continue;
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if ((d?.checklist?.[clId] || 0) > 0) count++;
+    } catch(e) {}
+  }
+  return count;
+}
+
+function exEntryHasEnded(entry, dateString) {
+  const rec = entry.recurrence || {};
+  if (!rec.endType || rec.endType === 'never') return false;
+  if (rec.endType === 'date') return rec.endDate ? dateString > rec.endDate : false;
+  if (rec.endType === 'occurrences')
+    return rec.endAfterOccurrences ? countOccurrences(rec, dateString) >= rec.endAfterOccurrences : false;
+  if (rec.endType === 'accomplishments')
+    return rec.endAfterAccomplishments ? countExAccomplishments(entry.id, dateString) >= rec.endAfterAccomplishments : false;
+  return false;
+}
+
+function clItemHasEnded(item, dateString) {
+  const rec = item.recurrence || {};
+  if (!rec.endType || rec.endType === 'never') return false;
+  if (rec.endType === 'date') return rec.endDate ? dateString > rec.endDate : false;
+  if (rec.endType === 'occurrences')
+    return rec.endAfterOccurrences ? countOccurrences(rec, dateString) >= rec.endAfterOccurrences : false;
+  if (rec.endType === 'accomplishments')
+    return rec.endAfterAccomplishments ? countCLAccomplishments(item.id, dateString) >= rec.endAfterAccomplishments : false;
+  return false;
+}
+
+function showDeletePanel(type) {
+  document.getElementById(type + '-delete-panel').style.display = '';
+}
+function hideDeletePanel(type) {
+  document.getElementById(type + '-delete-panel').style.display = 'none';
+}
+
+function deleteExFromTracker(mode) {
+  const today = dateStr(currentDate);
+  if (mode === 'all') {
+    saveActiveExList(getActiveExList().filter(e => e.id !== editExId));
+  } else if (mode === 'once') {
+    const list = getActiveExList();
+    const idx = list.findIndex(e => e.id === editExId);
+    if (idx !== -1) {
+      if (!list[idx].recurrence.exceptions) list[idx].recurrence.exceptions = [];
+      if (!list[idx].recurrence.exceptions.includes(today)) list[idx].recurrence.exceptions.push(today);
+      saveActiveExList(list);
+    }
+  } else if (mode === 'future') {
+    const list = getActiveExList();
+    const idx = list.findIndex(e => e.id === editExId);
+    if (idx !== -1) {
+      list[idx].recurrence.endDate = prevDateStr(today);
+      saveActiveExList(list);
+    }
+  }
   document.getElementById('edit-ex-overlay').classList.add('hidden');
+  hideDeletePanel('ex');
   renderExerciseCard();
 }
 
 // ─── HEALTH ROUTINES CHECKLIST ──────────────────────────
 function getCLItems() {
   const raw = JSON.parse(localStorage.getItem('eatshimo_checklist') || '[]');
-  // Migrate old format (no days/activeSince)
-  return raw.map(item => ({
-    days: [0,1,2,3,4,5,6],
-    activeSince: null,
-    ...item,
-  }));
+  return raw.map(item => {
+    // Migrate old format (has days/activeSince but no recurrence)
+    if (item.days !== undefined && !item.recurrence)
+      return { ...item, recurrence: { type: 'weekly', days: item.days, activeSince: item.activeSince } };
+    if (!item.recurrence)
+      item.recurrence = { type: 'weekly', days: [0,1,2,3,4,5,6], activeSince: null };
+    return item;
+  });
 }
 function saveCLItems(items) { localStorage.setItem('eatshimo_checklist', JSON.stringify(items)); }
 
@@ -1520,14 +1789,10 @@ function renderChecklistCard() {
   const list = document.getElementById('checklist-list');
   if (!list) return;
 
-  const dayOfWeek = currentDate.getDay();
   const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-  const applicable = items.filter(item => {
-    const daysOk = !item.days || item.days.length === 0 || item.days.includes(dayOfWeek);
-    const dateOk = !item.activeSince || key >= item.activeSince;
-    return daysOk && dateOk;
-  });
+  const applicable = items.filter(item =>
+    recurrenceAppliesOnDate(item.recurrence, key) && !clItemHasEnded(item, key)
+  );
 
   if (items.length === 0) {
     list.innerHTML = '<p class="empty-msg" style="padding:12px 0 4px;">No routines added yet. Tap "+ Add Routine" below.</p>';
@@ -1540,9 +1805,14 @@ function renderChecklistCard() {
 
   list.innerHTML = applicable.map(item => {
     const checked = checks[item.id] || 0;
-    const allDays = !item.days || item.days.length === 7;
-    const dayTags = allDays ? '' :
-      (item.days || []).sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
+    const cr = item.recurrence || {};
+    let dayTags = '';
+    if (cr.type === 'once') dayTags = '<span class="ex-day-tag">Once</span>';
+    else if (cr.type === 'every_x_weeks') dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}w</span>`;
+    else if (cr.type === 'every_x_months') dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}mo</span>`;
+    else if (cr.type === 'every_x_years') dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}yr</span>`;
+    else if (cr.type === 'weekly' && cr.days && cr.days.length < 7)
+      dayTags = cr.days.sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
     const boxes = Array.from({ length: item.count }, (_, i) =>
       `<button class="cl-box${i < checked ? ' checked' : ''}" onclick="toggleCLBox('${item.id}',${i})">${i < checked ? '✓' : ''}</button>`
     ).join('');
@@ -1568,12 +1838,16 @@ function toggleCLBox(itemId, boxIndex) {
   renderChecklistCard();
 }
 
-function openAddCLModal() {
+function openAddCLModal(defaultRec) {
   document.getElementById('new-cl-name').value = '';
   document.getElementById('new-cl-count').value = '1';
-  setPickerDays('new-cl-days', [0,1,2,3,4,5,6]);
-  const pastCb = document.getElementById('cl-apply-past');
+  const type = defaultRec || 'weekly';
+  const sel = document.getElementById('new-cl-recurrence');
+  if (sel) sel.value = type;
+  setPickerDays('new-cl-days-picker', [0,1,2,3,4,5,6]);
+  const pastCb = document.getElementById('new-cl-apply-past');
   if (pastCb) pastCb.checked = false;
+  updateRecurrenceUI('new-cl');
   document.getElementById('add-cl-overlay').classList.remove('hidden');
 }
 
@@ -1581,10 +1855,9 @@ function saveNewCL() {
   const name = document.getElementById('new-cl-name').value.trim();
   const count = Math.min(5, Math.max(1, parseInt(document.getElementById('new-cl-count').value) || 1));
   if (!name) { alert('Please enter a routine name.'); return; }
-  const days = getPickerDays('new-cl-days');
-  const applyPast = document.getElementById('cl-apply-past')?.checked;
+  const rec = getRecurrenceFromModal('new-cl');
   const items = getCLItems();
-  items.push({ id: 'cl_' + Date.now(), name, count, days, activeSince: applyPast ? null : dateStr(currentDate) });
+  items.push({ id: 'cl_' + Date.now(), name, count, recurrence: rec });
   saveCLItems(items);
   document.getElementById('add-cl-overlay').classList.add('hidden');
   renderChecklistCard();
@@ -1598,7 +1871,7 @@ function openEditCLModal(itemId) {
   if (!item) return;
   document.getElementById('edit-cl-name').value = item.name;
   document.getElementById('edit-cl-count').value = item.count;
-  setPickerDays('edit-cl-days', item.days || [0,1,2,3,4,5,6]);
+  setRecurrenceToModal('edit-cl', item.recurrence);
   document.getElementById('edit-cl-overlay').classList.remove('hidden');
 }
 
@@ -1609,17 +1882,460 @@ function saveEditCL() {
   const name = document.getElementById('edit-cl-name').value.trim();
   if (name) items[idx].name = name;
   items[idx].count = Math.min(5, Math.max(1, parseInt(document.getElementById('edit-cl-count').value) || 1));
-  items[idx].days = getPickerDays('edit-cl-days');
+  items[idx].recurrence = getRecurrenceFromModal('edit-cl');
   saveCLItems(items);
   document.getElementById('edit-cl-overlay').classList.add('hidden');
   renderChecklistCard();
 }
 
-function deleteCLItem() {
-  if (!confirm('Delete this routine?')) return;
-  saveCLItems(getCLItems().filter(i => i.id !== editCLId));
+function deleteCLItem(mode) {
+  const today = dateStr(currentDate);
+  if (mode === 'all') {
+    saveCLItems(getCLItems().filter(i => i.id !== editCLId));
+  } else if (mode === 'once') {
+    const items = getCLItems();
+    const idx = items.findIndex(i => i.id === editCLId);
+    if (idx !== -1) {
+      if (!items[idx].recurrence) items[idx].recurrence = { type: 'weekly', days: [0,1,2,3,4,5,6] };
+      if (!items[idx].recurrence.exceptions) items[idx].recurrence.exceptions = [];
+      if (!items[idx].recurrence.exceptions.includes(today)) items[idx].recurrence.exceptions.push(today);
+      saveCLItems(items);
+    }
+  } else if (mode === 'future') {
+    const items = getCLItems();
+    const idx = items.findIndex(i => i.id === editCLId);
+    if (idx !== -1) {
+      if (!items[idx].recurrence) items[idx].recurrence = { type: 'weekly', days: [0,1,2,3,4,5,6] };
+      items[idx].recurrence.endDate = prevDateStr(today);
+      saveCLItems(items);
+    }
+  }
   document.getElementById('edit-cl-overlay').classList.add('hidden');
+  hideDeletePanel('cl');
   renderChecklistCard();
+}
+
+// ════════════════════════════════════════════════════════════
+// ─── FASTING TRACKER ────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+let fastingTimerInterval = null;
+
+const FASTING_PRESETS = {
+  '16:8':  { fastingHours: 16, eatingHours: 8 },
+  '18:6':  { fastingHours: 18, eatingHours: 6 },
+  '14:10': { fastingHours: 14, eatingHours: 10 },
+};
+
+function getFastingConfig() {
+  return JSON.parse(localStorage.getItem('eatshimo_fasting') || '{"preset":"16:8","fastingHours":16,"eatingHours":8,"startHour":20,"startMin":0}');
+}
+function saveFastingConfig(cfg) { localStorage.setItem('eatshimo_fasting', JSON.stringify(cfg)); }
+
+function setFastingPreset(preset) {
+  const cfg = getFastingConfig();
+  cfg.preset = preset;
+  if (FASTING_PRESETS[preset]) {
+    cfg.fastingHours = FASTING_PRESETS[preset].fastingHours;
+    cfg.eatingHours  = FASTING_PRESETS[preset].eatingHours;
+  }
+  saveFastingConfig(cfg);
+  renderFastingCard();
+}
+
+function updateCustomFasting() {
+  const fh = parseInt(document.getElementById('fast-hours')?.value) || 16;
+  const eh = parseInt(document.getElementById('eat-hours')?.value)  || 8;
+  const cfg = getFastingConfig();
+  cfg.fastingHours = fh; cfg.eatingHours = eh;
+  saveFastingConfig(cfg);
+  renderFastingCard();
+}
+
+function saveFastingStartTime() {
+  const val = document.getElementById('fast-start-time')?.value || '20:00';
+  const [h, m] = val.split(':').map(Number);
+  const cfg = getFastingConfig();
+  cfg.startHour = h; cfg.startMin = m || 0;
+  saveFastingConfig(cfg);
+  renderFastingCard();
+}
+
+function getFastingStatus(cfg) {
+  const tz = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}').timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const nowLocal = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+  const nowMin = nowLocal.getHours() * 60 + nowLocal.getMinutes() + nowLocal.getSeconds() / 60;
+  const startMin = (cfg.startHour || 20) * 60 + (cfg.startMin || 0);
+  const fastMin  = (cfg.fastingHours || 16) * 60;
+  const eatMin   = (cfg.eatingHours  || 8)  * 60;
+  const sinceStart = ((nowMin - startMin) % 1440 + 1440) % 1440;
+  if (sinceStart < fastMin) {
+    return { phase: 'fasting', elapsed: sinceStart, remaining: fastMin - sinceStart, total: fastMin };
+  } else {
+    const eatElapsed = sinceStart - fastMin;
+    return { phase: 'eating', elapsed: eatElapsed, remaining: eatMin - eatElapsed, total: eatMin };
+  }
+}
+
+function fmtHHMM(totalMinutes) {
+  const h = Math.floor(Math.abs(totalMinutes) / 60);
+  const m = Math.floor(Math.abs(totalMinutes) % 60);
+  return `${h}h ${m.toString().padStart(2,'0')}m`;
+}
+
+function formatTimeHHMM(h, m) {
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hh = ((h % 12) || 12);
+  return `${hh}:${m.toString().padStart(2,'0')} ${suffix}`;
+}
+
+function renderFastingCard() {
+  if (!document.getElementById('fasting-status-display')) return;
+  const cfg = getFastingConfig();
+
+  // Update preset buttons
+  document.querySelectorAll('.fast-preset-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.preset === cfg.preset);
+  });
+
+  // Custom row
+  const customRow = document.getElementById('fasting-custom-row');
+  if (customRow) customRow.style.display = cfg.preset === 'custom' ? '' : 'none';
+  if (cfg.preset === 'custom') {
+    const fhEl = document.getElementById('fast-hours');
+    const ehEl = document.getElementById('eat-hours');
+    if (fhEl) fhEl.value = cfg.fastingHours;
+    if (ehEl) ehEl.value = cfg.eatingHours;
+  }
+
+  // Start time input
+  const stEl = document.getElementById('fast-start-time');
+  if (stEl) stEl.value = `${String(cfg.startHour||20).padStart(2,'0')}:${String(cfg.startMin||0).padStart(2,'0')}`;
+
+  // Window label
+  const eatStartH = ((cfg.startHour || 20) + (cfg.fastingHours || 16)) % 24;
+  const eatStartM = cfg.startMin || 0;
+  const fastRestartH = (eatStartH + (cfg.eatingHours || 8)) % 24;
+  const wlEl = document.getElementById('fasting-window-label');
+  if (wlEl) wlEl.textContent =
+    `Fast ${formatTimeHHMM(cfg.startHour||20, cfg.startMin||0)} – ${formatTimeHHMM(eatStartH, eatStartM)}  ·  Eat ${formatTimeHHMM(eatStartH, eatStartM)} – ${formatTimeHHMM(fastRestartH, eatStartM)}`;
+
+  // Status display
+  updateFastingDisplay(cfg);
+
+  // Timer
+  if (fastingTimerInterval) clearInterval(fastingTimerInterval);
+  fastingTimerInterval = setInterval(() => {
+    if (document.getElementById('fasting-status-display') && getCardEnabled('fasting'))
+      updateFastingDisplay(getFastingConfig());
+  }, 30000);
+}
+
+function updateFastingDisplay(cfg) {
+  const el = document.getElementById('fasting-status-display');
+  if (!el) return;
+  const s = getFastingStatus(cfg);
+  const pct = Math.round((s.elapsed / s.total) * 100);
+  const isFasting = s.phase === 'fasting';
+  el.innerHTML = `
+    <div class="fasting-status-box ${isFasting ? 'fasting-active' : 'eating-active'}">
+      <div class="fasting-phase-label">${isFasting ? 'Fasting' : 'Eating Window'}</div>
+      <div class="fasting-remaining">${fmtHHMM(s.remaining)} remaining</div>
+      <div class="fasting-bar-wrap"><div class="fasting-bar" style="width:${pct}%"></div></div>
+      <div class="fasting-pct">${pct}% complete</div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// ─── FOOD MODERATOR ─────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+function getFoodCats()    { return JSON.parse(localStorage.getItem('eatshimo_food_cats') || '[]'); }
+function saveFoodCats(v)  { localStorage.setItem('eatshimo_food_cats', JSON.stringify(v)); }
+function getFoodTags()    { return JSON.parse(localStorage.getItem('eatshimo_food_tags') || '{}'); }
+function saveFoodTags(v)  { localStorage.setItem('eatshimo_food_tags', JSON.stringify(v)); }
+function getCooldowns()   { return JSON.parse(localStorage.getItem('eatshimo_cooldowns') || '{}'); }
+function saveCooldowns(v) { localStorage.setItem('eatshimo_cooldowns', JSON.stringify(v)); }
+function getCooldownSetting() { return localStorage.getItem('eatshimo_cooldown_setting') || 'reset'; }
+function saveCooldownSetting(v) {
+  localStorage.setItem('eatshimo_cooldown_setting', v);
+  renderFoodModCard();
+}
+
+function cooldownDaysRemaining(catId) {
+  const cds = getCooldowns();
+  const entry = cds[catId];
+  if (!entry || !entry.lastConsumed) return 0;
+  const daysSince = Math.floor((Date.now() - new Date(entry.lastConsumed + 'T00:00:00').getTime()) / 864e5);
+  return Math.max(0, entry.currentCooldownDays - daysSince);
+}
+
+function renderFoodModCard() {
+  const list = document.getElementById('foodmod-list');
+  if (!list) return;
+  const cats = getFoodCats();
+  const setting = getCooldownSetting();
+  const settingEl = document.getElementById('foodmod-setting');
+  if (settingEl) settingEl.value = setting;
+
+  if (cats.length === 0) {
+    list.innerHTML = '<p class="empty-msg" style="padding:10px 0 4px;">No food categories yet. Tap "+ Add Food Category" to begin.</p>';
+    return;
+  }
+
+  list.innerHTML = cats.map(cat => {
+    const rem = cooldownDaysRemaining(cat.id);
+    const isReady = rem === 0;
+    return `
+    <div class="foodmod-item">
+      <div class="foodmod-item-top">
+        <div>
+          <span class="foodmod-cat-name">${cat.name}</span>
+          <span class="foodmod-cooldown-default">${cat.cooldownDays}d cooldown</span>
+        </div>
+        <div class="foodmod-status ${isReady ? 'status-ready' : 'status-cooling'}">
+          ${isReady ? '✓ Ready' : ` ${rem}d left`}
+        </div>
+      </div>
+      <div class="foodmod-actions">
+        <button class="btn-foodmod-action" onclick="openFoodCatModal('${cat.id}')">Edit</button>
+        <button class="btn-foodmod-action" onclick="openEditCooldownModal('${cat.id}')">Cooldown</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Check + update cooldown when food is logged
+function checkFoodModerator(foodName) {
+  const tags = getFoodTags();
+  const catIds = tags[foodName] || [];
+  if (!catIds.length) return;
+  const cats = getFoodCats();
+  const cds  = getCooldowns();
+  const setting = getCooldownSetting();
+  const today = dateStr(new Date());
+  catIds.forEach(catId => {
+    const cat = cats.find(c => c.id === catId);
+    if (!cat) return;
+    const rem = cooldownDaysRemaining(catId);
+    let newCooldown = cat.cooldownDays;
+    if (rem > 0 && setting === 'extend') newCooldown = rem + cat.cooldownDays;
+    cds[catId] = { lastConsumed: today, currentCooldownDays: newCooldown };
+  });
+  saveCooldowns(cds);
+  if (getCardEnabled('foodmod') && document.getElementById('foodmod-list')) renderFoodModCard();
+}
+
+// Food Category Modal
+let editingCatId = null;
+let foodCatSelectedNames = [];
+
+function openFoodCatModal(catId) {
+  editingCatId = catId || null;
+  const cats = getFoodCats();
+  const tags = getFoodTags();
+  const cat = catId ? cats.find(c => c.id === catId) : null;
+  document.getElementById('foodcat-modal-title').textContent = cat ? 'Edit Food Category' : 'Add Food Category';
+  document.getElementById('foodcat-name').value = cat ? cat.name : '';
+  document.getElementById('foodcat-days').value = cat ? cat.cooldownDays : 7;
+  document.getElementById('foodcat-delete-btn').style.display = cat ? '' : 'none';
+  document.getElementById('foodcat-search').value = '';
+
+  // Pre-populate currently tagged foods for this category
+  foodCatSelectedNames = catId
+    ? Object.keys(tags).filter(name => (tags[name] || []).includes(catId))
+    : [];
+
+  renderFoodCatSelectedChips();
+  renderFoodCatPickList('');
+  document.getElementById('foodcat-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('foodcat-search').focus(), 100);
+}
+
+function renderFoodCatPickList(query) {
+  const list = document.getElementById('foodcat-pick-list');
+  const sorted = [...foods].sort((a, b) => a.name.localeCompare(b.name));
+  const filtered = sorted.filter(f => f.name.toLowerCase().includes(query.toLowerCase()));
+  if (filtered.length === 0) {
+    list.innerHTML = `<p class="empty-msg" style="padding:16px 0;">${foods.length === 0 ? 'No foods in library yet.' : 'No foods match your search.'}</p>`;
+    return;
+  }
+  list.innerHTML = filtered.map(f => {
+    const selected = foodCatSelectedNames.includes(f.name);
+    return `
+      <div class="food-pick-item${selected ? ' selected' : ''}" onclick="toggleFoodCatTag('${f.name.replace(/'/g, "\\'")}')">
+        <div class="pick-name">${f.name}</div>
+        <div class="pick-meta">${f.grams}g · ${f.calories} kcal · P${f.protein}g C${f.carbs}g F${f.fat}g</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleFoodCatTag(name) {
+  if (foodCatSelectedNames.includes(name)) {
+    foodCatSelectedNames = foodCatSelectedNames.filter(n => n !== name);
+  } else {
+    foodCatSelectedNames.push(name);
+  }
+  renderFoodCatSelectedChips();
+  renderFoodCatPickList(document.getElementById('foodcat-search').value);
+}
+
+function renderFoodCatSelectedChips() {
+  const el = document.getElementById('foodcat-selected-chips');
+  if (foodCatSelectedNames.length === 0) {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'flex';
+  el.innerHTML = foodCatSelectedNames.map(name => `
+    <span class="foodcat-chip">
+      ${name}
+      <button onclick="toggleFoodCatTag('${name.replace(/'/g, "\\'")}')" aria-label="Remove">✕</button>
+    </span>`).join('');
+}
+
+function saveFoodCat() {
+  const name = document.getElementById('foodcat-name').value.trim();
+  const days = parseInt(document.getElementById('foodcat-days').value) || 7;
+  if (!name) { alert('Please enter a category name.'); return; }
+
+  const cats = getFoodCats();
+  const tags = getFoodTags();
+
+  let catId = editingCatId;
+  if (catId) {
+    const idx = cats.findIndex(c => c.id === catId);
+    if (idx !== -1) { cats[idx].name = name; cats[idx].cooldownDays = days; }
+  } else {
+    catId = 'cat_' + Date.now();
+    cats.push({ id: catId, name, cooldownDays: days });
+  }
+  saveFoodCats(cats);
+
+  // Save tags: remove this catId from all foods, then re-add to selected ones
+  Object.keys(tags).forEach(foodName => {
+    tags[foodName] = (tags[foodName] || []).filter(id => id !== catId);
+  });
+  foodCatSelectedNames.forEach(foodName => {
+    if (!tags[foodName]) tags[foodName] = [];
+    if (!tags[foodName].includes(catId)) tags[foodName].push(catId);
+  });
+  saveFoodTags(tags);
+  document.getElementById('foodcat-overlay').classList.add('hidden');
+  renderFoodModCard();
+}
+
+function deleteFoodCat() {
+  if (!editingCatId || !confirm('Delete this food category?')) return;
+  saveFoodCats(getFoodCats().filter(c => c.id !== editingCatId));
+  const cds = getCooldowns(); delete cds[editingCatId]; saveCooldowns(cds);
+  const tags = getFoodTags();
+  Object.keys(tags).forEach(k => { tags[k] = tags[k].filter(id => id !== editingCatId); });
+  saveFoodTags(tags);
+  document.getElementById('foodcat-overlay').classList.add('hidden');
+  renderFoodModCard();
+}
+
+// Edit Cooldown Modal
+let editingCooldownCatId = null;
+
+function openEditCooldownModal(catId) {
+  editingCooldownCatId = catId;
+  const cat = getFoodCats().find(c => c.id === catId);
+  if (!cat) return;
+  document.getElementById('editcooldown-cat-name').textContent = cat.name;
+  document.getElementById('editcooldown-default').value = cat.cooldownDays;
+  document.getElementById('editcooldown-current').value = cooldownDaysRemaining(catId);
+  document.getElementById('editcooldown-overlay').classList.remove('hidden');
+}
+
+function saveEditCooldown() {
+  const newDefault  = parseInt(document.getElementById('editcooldown-default').value) || 1;
+  const newCurrent  = parseInt(document.getElementById('editcooldown-current').value) || 0;
+  const cats = getFoodCats();
+  const idx = cats.findIndex(c => c.id === editingCooldownCatId);
+  if (idx !== -1) { cats[idx].cooldownDays = newDefault; saveFoodCats(cats); }
+  if (newCurrent > 0) {
+    const cds = getCooldowns();
+    const today = dateStr(new Date());
+    cds[editingCooldownCatId] = { lastConsumed: today, currentCooldownDays: newCurrent };
+    saveCooldowns(cds);
+  } else {
+    clearOneCooldown();
+    return;
+  }
+  document.getElementById('editcooldown-overlay').classList.add('hidden');
+  renderFoodModCard();
+}
+
+function clearOneCooldown() {
+  const cds = getCooldowns();
+  delete cds[editingCooldownCatId || editingCooldownCatId];
+  saveCooldowns(cds);
+  document.getElementById('editcooldown-overlay').classList.add('hidden');
+  renderFoodModCard();
+}
+
+// ════════════════════════════════════════════════════════════
+// ─── JSON EXPORT / IMPORT ───────────────────────────────────
+// ════════════════════════════════════════════════════════════
+const ALL_CARD_KEYS = [
+  'eatshimo_ex_lib','eatshimo_active_ex','eatshimo_checklist',
+  'eatshimo_fasting','eatshimo_food_cats','eatshimo_food_tags',
+  'eatshimo_cooldowns','eatshimo_cooldown_setting'
+];
+
+function exportAllData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('eatshimo')) {
+      try { data[k] = JSON.parse(localStorage.getItem(k)); }
+      catch(e) { data[k] = localStorage.getItem(k); }
+    }
+  }
+  _downloadJSON(data, 'eatshimo_data.json');
+}
+
+function exportCardsData() {
+  const data = {};
+  ALL_CARD_KEYS.forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v !== null) { try { data[k] = JSON.parse(v); } catch(e) { data[k] = v; } }
+  });
+  _downloadJSON(data, 'eatshimo_cards.json');
+}
+
+function _downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      let count = 0;
+      Object.entries(data).forEach(([k, v]) => {
+        if (k.startsWith('eatshimo')) {
+          localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+          count++;
+        }
+      });
+      document.getElementById('import-status').textContent = `✓ Imported ${count} keys. Refreshing…`;
+      setTimeout(() => location.reload(), 1200);
+    } catch (err) {
+      document.getElementById('import-status').textContent = '✗ Invalid JSON file.';
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 // ─── INIT ────────────────────────────────────────────────

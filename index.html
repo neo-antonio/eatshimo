@@ -238,15 +238,66 @@
         </div>
       </section>
 
-      <!-- HEALTH ROUTINES CHECKLIST -->
+      <!-- FASTING TRACKER -->
+      <section class="card collapsible-card" id="card-fasting">
+        <div class="collapsible-header" onclick="toggleCardCollapse('fasting')">
+          <h2>Fasting</h2>
+          <span class="collapse-chevron" id="chevron-fasting">▲</span>
+        </div>
+        <div class="collapsible-body" id="body-fasting">
+          <div id="fasting-status-display"></div>
+          <div class="fasting-presets" id="fasting-presets">
+            <button class="fast-preset-btn" data-preset="16:8" onclick="setFastingPreset('16:8')">16:8</button>
+            <button class="fast-preset-btn" data-preset="18:6" onclick="setFastingPreset('18:6')">18:6</button>
+            <button class="fast-preset-btn" data-preset="14:10" onclick="setFastingPreset('14:10')">14:10</button>
+            <button class="fast-preset-btn" data-preset="custom" onclick="setFastingPreset('custom')">Custom</button>
+          </div>
+          <div id="fasting-custom-row" class="fasting-custom-row" style="display:none;">
+            <div class="fasting-field">
+              <label>Fast (hrs)</label>
+              <input type="number" id="fast-hours" min="1" max="23" value="16" onchange="updateCustomFasting()" />
+            </div>
+            <div class="fasting-field">
+              <label>Eat (hrs)</label>
+              <input type="number" id="eat-hours" min="1" max="23" value="8" onchange="updateCustomFasting()" />
+            </div>
+          </div>
+          <div class="fasting-time-row">
+            <label class="fasting-time-label">Fasting starts at</label>
+            <input type="time" id="fast-start-time" value="20:00" onchange="saveFastingStartTime()" />
+          </div>
+          <p id="fasting-window-label" class="fasting-window-label"></p>
+        </div>
+      </section>
+
+      <!-- FOOD MODERATOR -->
+      <section class="card collapsible-card" id="card-foodmod">
+        <div class="collapsible-header" onclick="toggleCardCollapse('foodmod')">
+          <h2>Food Moderator</h2>
+          <span class="collapse-chevron" id="chevron-foodmod">▲</span>
+        </div>
+        <div class="collapsible-body" id="body-foodmod">
+          <div class="foodmod-setting-row">
+            <span class="foodmod-setting-label">When eaten during cooldown:</span>
+            <select id="foodmod-setting" onchange="saveCooldownSetting(this.value)">
+              <option value="reset">Reset to default cooldown</option>
+              <option value="extend">Extend by default cooldown days</option>
+            </select>
+          </div>
+          <div id="foodmod-list" style="margin-top:12px;"></div>
+          <button class="btn-add-card-item" onclick="openFoodCatModal()">+ Add Food Category</button>
+        </div>
+      </section>
+
+      <!-- HABIT TRACKER -->
       <section class="card collapsible-card" id="card-checklist">
         <div class="collapsible-header" onclick="toggleCardCollapse('checklist')">
-          <h2>Health Routines</h2>
+          <h2>Habit Tracker</h2>
           <span class="collapse-chevron" id="chevron-checklist">▲</span>
         </div>
         <div class="collapsible-body" id="body-checklist">
           <div id="checklist-list"></div>
-          <button class="btn-add-card-item" onclick="openAddCLModal()">+ Add Routine</button>
+          <button class="btn-add-card-item" onclick="openAddCLModal()">+ Add Habit</button>
         </div>
       </section>
 
@@ -418,12 +469,14 @@
 
       <section class="card">
         <h2>Import / Export Data</h2>
-        <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;">Export your daily logs as a CSV file, or import from a previously exported file.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button onclick="exportCSV()" style="flex:1;min-width:120px;">Export CSV</button>
-          <button class="btn-secondary" onclick="document.getElementById('csv-import').click()" style="flex:1;min-width:120px;">Import CSV</button>
-          <input type="file" id="csv-import" accept=".csv" style="display:none;" onchange="importCSV(event)" />
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:4px;">Export everything (profile, logs, library, cards) as a single JSON file. Import to restore.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;margin-top:14px;">
+          <button onclick="exportAllData()" style="flex:1;min-width:130px;">Export All Data</button>
+          <button class="btn-secondary" onclick="document.getElementById('json-import').click()" style="flex:1;min-width:130px;">Import JSON</button>
+          <input type="file" id="json-import" accept=".json" style="display:none;" onchange="importData(event)" />
         </div>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Export only the four health cards (exercises, habits, fasting, food moderator) as a separate file.</p>
+        <button onclick="exportCardsData()" class="btn-secondary" style="width:100%;">Export Cards Only</button>
         <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--text-dim);"></div>
       </section>
 
@@ -452,11 +505,31 @@
           </div>
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="toggle-label">Health Routines</div>
-              <div class="toggle-desc">Daily checklists for vitamins, skincare, etc.</div>
+              <div class="toggle-label">Habit Tracker</div>
+              <div class="toggle-desc">Daily habit checklists for vitamins, skincare, etc.</div>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-checklist" onchange="saveCardToggle('checklist',this)" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Fasting Tracker</div>
+              <div class="toggle-desc">Track fasting and eating windows with live timer.</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-fasting" onchange="saveCardToggle('fasting',this)" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Food Moderator</div>
+              <div class="toggle-desc">Set cooldown periods for food categories.</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-foodmod" onchange="saveCardToggle('foodmod',this)" />
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -602,7 +675,7 @@
         <div class="tutorial-step" id="tut-step-2">
           <h3>Profile</h3>
           <p>Enter your gender, height, and current weight to get calorie target suggestions for weight loss, gain, or maintenance. You can also set daily goals for your macros.</p>
-          <p style="margin-top:10px;">All data is stored locally on your device. Export or import your profile, food library, and meal logs as a CSV file to transfer or back up your data.</p>
+          <p style="margin-top:10px;">All data is stored locally on your device. Export or import your profile, food library, meal logs, and health cards as a JSON file to transfer or back up your data.</p>
         </div>
       </div>
       <div class="tutorial-dots">
@@ -643,11 +716,20 @@
       <div id="add-ex-preset-list" style="margin-bottom:8px;"></div>
       <div class="section-divider" style="margin-top:4px;">Currently Tracking</div>
       <div id="add-ex-active-list" style="margin-bottom:4px;min-height:28px;"></div>
-      <div class="section-divider">Schedule for New Exercises</div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px;">Active Days</label>
-          <div class="day-picker" id="new-ex-days">
+      <div class="section-divider">Repeat Schedule</div>
+      <div class="rec-section">
+        <div class="field full" style="margin-top:10px;">
+          <select id="new-ex-recurrence" onchange="updateRecurrenceUI('new-ex')">
+            <option value="weekly">Weekly (specific days)</option>
+            <option value="once">This day only — no repeat</option>
+            <option value="every_x_weeks">Every N weeks</option>
+            <option value="every_x_months">Every N months (same date)</option>
+            <option value="every_x_years">Every N years (same date)</option>
+          </select>
+        </div>
+        <div class="rec-row" id="new-ex-days-row">
+          <label class="rec-label">Days of week</label>
+          <div class="day-picker" id="new-ex-days-picker">
             <button class="day-btn active" data-day="1" onclick="toggleDayBtn(this)">M</button>
             <button class="day-btn active" data-day="2" onclick="toggleDayBtn(this)">T</button>
             <button class="day-btn active" data-day="3" onclick="toggleDayBtn(this)">W</button>
@@ -657,10 +739,19 @@
             <button class="day-btn active" data-day="0" onclick="toggleDayBtn(this)">S</button>
           </div>
         </div>
-        <label class="ask-ai-check">
-          <input type="checkbox" id="ex-apply-past" />
-          Also apply to past days
-        </label>
+        <div class="rec-row" id="new-ex-interval-row" style="display:none;">
+          <label class="rec-label">Repeat every</label>
+          <div class="interval-row">
+            <input type="number" id="new-ex-interval" min="1" value="2" class="interval-input" />
+            <span id="new-ex-interval-unit" class="interval-unit">weeks</span>
+          </div>
+        </div>
+  <div class="rec-row" id="new-ex-past-row">
+    <label class="ask-ai-check">
+      <input type="checkbox" id="new-ex-apply-past" />
+      Also apply to past dates
+    </label>
+  </div>
       </div>
       <div class="section-divider" style="margin-top:14px;">Create Custom</div>
       <div class="form-grid" style="margin-top:10px;">
@@ -670,6 +761,7 @@
           <select id="new-ex-type"><option value="reps">Reps</option><option value="secs">Seconds</option></select>
         </div>
         <div class="field"><label>Daily Goal (optional)</label><input type="number" id="new-ex-goal" placeholder="e.g. 50" min="0" /></div>
+        <div class="field full"><label>Calories per rep / sec (optional)</label><input type="number" id="new-ex-cals-per-unit" placeholder="e.g. 0.5 — overrides auto-estimate" min="0" step="0.01" /></div>
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeAddExModal()">Close</button>
@@ -685,41 +777,99 @@
       <div class="form-grid">
         <div class="field full"><label>Name</label><input type="text" id="edit-ex-name" /></div>
         <div class="field full"><label>Daily Goal (0 = no goal)</label><input type="number" id="edit-ex-goal" min="0" placeholder="e.g. 50" /></div>
-        <div class="field full">
-          <label>Active Days</label>
-          <div class="day-picker" id="edit-ex-days" style="margin-top:4px;">
-            <button class="day-btn" data-day="1" onclick="toggleDayBtn(this)">M</button>
-            <button class="day-btn" data-day="2" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn" data-day="3" onclick="toggleDayBtn(this)">W</button>
-            <button class="day-btn" data-day="4" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn" data-day="5" onclick="toggleDayBtn(this)">F</button>
-            <button class="day-btn" data-day="6" onclick="toggleDayBtn(this)">S</button>
-            <button class="day-btn" data-day="0" onclick="toggleDayBtn(this)">S</button>
+        <div class="field full"><label>Calories per rep / sec (optional)</label><input type="number" id="edit-ex-cals-per-unit" placeholder="e.g. 0.5 — overrides auto-estimate" min="0" step="0.01" /></div>
+      </div>
+      <div class="section-divider">Repeat Schedule</div>
+      <div class="rec-section">
+        <div class="field full" style="margin-top:10px;">
+          <select id="edit-ex-recurrence" onchange="updateRecurrenceUI('edit-ex')">
+            <option value="weekly">Weekly (specific days)</option>
+            <option value="once">This day only — no repeat</option>
+            <option value="every_x_weeks">Every N weeks</option>
+            <option value="every_x_months">Every N months (same date)</option>
+            <option value="every_x_years">Every N years (same date)</option>
+          </select>
+        </div>
+        <div class="rec-row" id="edit-ex-days-row">
+          <label class="rec-label">Days of week</label>
+          <div class="day-picker" id="edit-ex-days-picker">
+            <button class="day-btn " data-day="1" onclick="toggleDayBtn(this)">M</button>
+            <button class="day-btn " data-day="2" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn " data-day="3" onclick="toggleDayBtn(this)">W</button>
+            <button class="day-btn " data-day="4" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn " data-day="5" onclick="toggleDayBtn(this)">F</button>
+            <button class="day-btn " data-day="6" onclick="toggleDayBtn(this)">S</button>
+            <button class="day-btn " data-day="0" onclick="toggleDayBtn(this)">S</button>
           </div>
+        </div>
+        <div class="rec-row" id="edit-ex-interval-row" style="display:none;">
+          <label class="rec-label">Repeat every</label>
+          <div class="interval-row">
+            <input type="number" id="edit-ex-interval" min="1" value="2" class="interval-input" />
+            <span id="edit-ex-interval-unit" class="interval-unit">weeks</span>
+          </div>
+        </div>
+        <div class="rec-row">
+          <label class="rec-label">End condition</label>
+          <select id="edit-ex-end-type" onchange="updateEndUI('edit-ex')">
+            <option value="never">Never ends</option>
+            <option value="date">On a specific date</option>
+            <option value="occurrences">After N scheduled occurrences</option>
+            <option value="accomplishments">After N completions</option>
+          </select>
+        </div>
+        <div class="rec-row" id="edit-ex-end-date-row" style="display:none;">
+          <label class="rec-label">End date</label>
+          <input type="date" id="edit-ex-end-date" />
+        </div>
+        <div class="rec-row" id="edit-ex-end-count-row" style="display:none;">
+          <label class="rec-label" id="edit-ex-end-count-label">After how many?</label>
+          <div class="interval-row"><input type="number" id="edit-ex-end-count" min="1" value="10" class="interval-input" /></div>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-danger" onclick="deleteExFromTracker()">Remove</button>
+        <button class="btn-danger" onclick="showDeletePanel('ex')">Remove</button>
         <button onclick="saveEditEx()">Save</button>
+      </div>
+      <div id="ex-delete-panel" class="delete-panel" style="display:none;">
+        <p class="delete-panel-title">Remove from which occurrences?</p>
+        <div class="delete-panel-btns">
+          <button class="btn-delete-opt" onclick="deleteExFromTracker('once')">This day only</button>
+          <button class="btn-delete-opt" onclick="deleteExFromTracker('future')">This &amp; future days</button>
+          <button class="btn-delete-opt btn-delete-all" onclick="deleteExFromTracker('all')">All occurrences</button>
+        </div>
+        <button class="btn-delete-cancel" onclick="hideDeletePanel('ex')">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- ADD CHECKLIST MODAL -->
+  <!-- ADD HABIT MODAL -->
   <div id="add-cl-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('add-cl-overlay').classList.add('hidden')">
     <div class="modal">
-      <h2>Add Health Routine</h2>
+      <h2>Add Habit</h2>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">e.g. Vitamins, Skincare, Medication</p>
       <div class="form-grid">
-        <div class="field full"><label>Routine Name</label><input type="text" id="new-cl-name" placeholder="e.g. Take Vitamins" /></div>
+        <div class="field full"><label>Habit Name</label><input type="text" id="new-cl-name" placeholder="e.g. Take Vitamins" /></div>
         <div class="field full">
           <label>Times per day (1–5 checkboxes)</label>
           <input type="number" id="new-cl-count" min="1" max="5" value="1" />
           <span style="font-size:11px;color:var(--text-dim);margin-top:4px;display:block;">Each occurrence gets its own checkbox.</span>
         </div>
-        <div class="field full">
-          <label>Active Days</label>
-          <div class="day-picker" id="new-cl-days" style="margin-top:4px;">
+      </div>
+      <div class="section-divider">Repeat Schedule</div>
+      <div class="rec-section">
+        <div class="field full" style="margin-top:10px;">
+          <select id="new-cl-recurrence" onchange="updateRecurrenceUI('new-cl')">
+            <option value="weekly">Weekly (specific days)</option>
+            <option value="once">This day only — no repeat</option>
+            <option value="every_x_weeks">Every N weeks</option>
+            <option value="every_x_months">Every N months (same date)</option>
+            <option value="every_x_years">Every N years (same date)</option>
+          </select>
+        </div>
+        <div class="rec-row" id="new-cl-days-row">
+          <label class="rec-label">Days of week</label>
+          <div class="day-picker" id="new-cl-days-picker">
             <button class="day-btn active" data-day="1" onclick="toggleDayBtn(this)">M</button>
             <button class="day-btn active" data-day="2" onclick="toggleDayBtn(this)">T</button>
             <button class="day-btn active" data-day="3" onclick="toggleDayBtn(this)">W</button>
@@ -729,16 +879,23 @@
             <button class="day-btn active" data-day="0" onclick="toggleDayBtn(this)">S</button>
           </div>
         </div>
-        <div class="field full">
-          <label class="ask-ai-check">
-            <input type="checkbox" id="cl-apply-past" />
-            Also apply to past days
-          </label>
+        <div class="rec-row" id="new-cl-interval-row" style="display:none;">
+          <label class="rec-label">Repeat every</label>
+          <div class="interval-row">
+            <input type="number" id="new-cl-interval" min="1" value="2" class="interval-input" />
+            <span id="new-cl-interval-unit" class="interval-unit">weeks</span>
+          </div>
         </div>
+  <div class="rec-row" id="new-cl-past-row">
+    <label class="ask-ai-check">
+      <input type="checkbox" id="new-cl-apply-past" />
+      Also apply to past dates
+    </label>
+  </div>
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="document.getElementById('add-cl-overlay').classList.add('hidden')">Cancel</button>
-        <button onclick="saveNewCL()">Add Routine</button>
+        <button onclick="saveNewCL()">Add Habit</button>
       </div>
     </div>
   </div>
@@ -746,26 +903,114 @@
   <!-- EDIT CHECKLIST MODAL -->
   <div id="edit-cl-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('edit-cl-overlay').classList.add('hidden')">
     <div class="modal">
-      <h2>Edit Routine</h2>
+      <h2>Edit Habit</h2>
       <div class="form-grid">
         <div class="field full"><label>Name</label><input type="text" id="edit-cl-name" /></div>
         <div class="field full"><label>Times per day (1–5)</label><input type="number" id="edit-cl-count" min="1" max="5" /></div>
-        <div class="field full">
-          <label>Active Days</label>
-          <div class="day-picker" id="edit-cl-days" style="margin-top:4px;">
-            <button class="day-btn" data-day="1" onclick="toggleDayBtn(this)">M</button>
-            <button class="day-btn" data-day="2" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn" data-day="3" onclick="toggleDayBtn(this)">W</button>
-            <button class="day-btn" data-day="4" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn" data-day="5" onclick="toggleDayBtn(this)">F</button>
-            <button class="day-btn" data-day="6" onclick="toggleDayBtn(this)">S</button>
-            <button class="day-btn" data-day="0" onclick="toggleDayBtn(this)">S</button>
+      <div class="section-divider">Repeat Schedule</div>
+      <div class="rec-section">
+        <div class="field full" style="margin-top:10px;">
+          <select id="edit-cl-recurrence" onchange="updateRecurrenceUI('edit-cl')">
+            <option value="weekly">Weekly (specific days)</option>
+            <option value="once">This day only — no repeat</option>
+            <option value="every_x_weeks">Every N weeks</option>
+            <option value="every_x_months">Every N months (same date)</option>
+            <option value="every_x_years">Every N years (same date)</option>
+          </select>
+        </div>
+        <div class="rec-row" id="edit-cl-days-row">
+          <label class="rec-label">Days of week</label>
+          <div class="day-picker" id="edit-cl-days-picker">
+            <button class="day-btn " data-day="1" onclick="toggleDayBtn(this)">M</button>
+            <button class="day-btn " data-day="2" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn " data-day="3" onclick="toggleDayBtn(this)">W</button>
+            <button class="day-btn " data-day="4" onclick="toggleDayBtn(this)">T</button>
+            <button class="day-btn " data-day="5" onclick="toggleDayBtn(this)">F</button>
+            <button class="day-btn " data-day="6" onclick="toggleDayBtn(this)">S</button>
+            <button class="day-btn " data-day="0" onclick="toggleDayBtn(this)">S</button>
           </div>
+        </div>
+        <div class="rec-row" id="edit-cl-interval-row" style="display:none;">
+          <label class="rec-label">Repeat every</label>
+          <div class="interval-row">
+            <input type="number" id="edit-cl-interval" min="1" value="2" class="interval-input" />
+            <span id="edit-cl-interval-unit" class="interval-unit">weeks</span>
+          </div>
+        </div>
+        <div class="rec-row">
+          <label class="rec-label">End condition</label>
+          <select id="edit-cl-end-type" onchange="updateEndUI('edit-cl')">
+            <option value="never">Never ends</option>
+            <option value="date">On a specific date</option>
+            <option value="occurrences">After N scheduled occurrences</option>
+            <option value="accomplishments">After N completions</option>
+          </select>
+        </div>
+        <div class="rec-row" id="edit-cl-end-date-row" style="display:none;">
+          <label class="rec-label">End date</label>
+          <input type="date" id="edit-cl-end-date" />
+        </div>
+        <div class="rec-row" id="edit-cl-end-count-row" style="display:none;">
+          <label class="rec-label" id="edit-cl-end-count-label">After how many?</label>
+          <div class="interval-row"><input type="number" id="edit-cl-end-count" min="1" value="10" class="interval-input" /></div>
+        </div>
+      </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger" onclick="showDeletePanel('cl')">Delete</button>
+        <button onclick="saveEditCL()">Save</button>
+      </div>
+      <div id="cl-delete-panel" class="delete-panel" style="display:none;">
+        <p class="delete-panel-title">Remove from which occurrences?</p>
+        <div class="delete-panel-btns">
+          <button class="btn-delete-opt" onclick="deleteCLItem('once')">This day only</button>
+          <button class="btn-delete-opt" onclick="deleteCLItem('future')">This &amp; future days</button>
+          <button class="btn-delete-opt btn-delete-all" onclick="deleteCLItem('all')">All occurrences</button>
+        </div>
+        <button class="btn-delete-cancel" onclick="hideDeletePanel('cl')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOD CATEGORY MODAL -->
+  <div id="foodcat-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('foodcat-overlay').classList.add('hidden')">
+    <div class="modal">
+      <h2 id="foodcat-modal-title">Add Food Category</h2>
+      <div class="form-grid">
+        <div class="field full"><label>Category Name</label><input type="text" id="foodcat-name" placeholder="e.g. Canned Food" /></div>
+        <div class="field full"><label>Default Cooldown (days)</label><input type="number" id="foodcat-days" min="1" value="7" /></div>
+      </div>
+      <div class="section-divider" style="margin-top:14px;">Tag Foods from Library</div>
+      <p style="font-size:11px;color:var(--text-dim);margin:6px 0 8px;">Search and tap foods that belong to this category. Logging them will trigger the cooldown.</p>
+      <input type="text" id="foodcat-search" placeholder="Search foods..." oninput="renderFoodCatPickList(this.value)" style="margin-bottom:10px;" />
+      <div id="foodcat-selected-chips" class="foodcat-selected-chips"></div>
+      <div class="food-pick-list" id="foodcat-pick-list"></div>
+      <div class="modal-actions">
+        <button class="btn-danger" id="foodcat-delete-btn" onclick="deleteFoodCat()" style="display:none;">Delete</button>
+        <button class="btn-secondary" onclick="document.getElementById('foodcat-overlay').classList.add('hidden')">Cancel</button>
+        <button onclick="saveFoodCat()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT COOLDOWN MODAL -->
+  <div id="editcooldown-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('editcooldown-overlay').classList.add('hidden')">
+    <div class="modal">
+      <h2>Edit Cooldown</h2>
+      <p id="editcooldown-cat-name" style="font-size:13px;color:var(--text-dim);margin-bottom:14px;"></p>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Default cooldown (days)</label>
+          <input type="number" id="editcooldown-default" min="1" />
+        </div>
+        <div class="field full">
+          <label>Current cooldown remaining (days) — edit without changing default</label>
+          <input type="number" id="editcooldown-current" min="0" />
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-danger" onclick="deleteCLItem()">Delete</button>
-        <button onclick="saveEditCL()">Save</button>
+        <button class="btn-secondary" onclick="clearOneCooldown()">Clear Cooldown</button>
+        <button onclick="saveEditCooldown()">Save</button>
       </div>
     </div>
   </div>
@@ -784,7 +1029,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v1.4</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v2.0</p>
   </footer>
 
 <style>

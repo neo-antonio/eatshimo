@@ -96,8 +96,10 @@ Bug reports, feature suggestions, and pull requests are welcome. Feel free to fo
 | Version | Notes                  |
 | ------- | ---------------------- |
 | v1.0    | Initial stable release |
-| v1.1    | Vertocal view only mobile and fixed date arrow color |
+| v1.1    | Locked orientation and fixed date arrow color |
 | v1.2    | Added color theme options and dark theme |
-| v1.3    | Added option to auto-adjust values from grams |
-| v1.3    | Added exercise and health routine checklist + toggle |
+| v1.3    | Added option to edit values by adjusting grams |
+| v1.4    | Added exercise and health routine checklist |
+| v2.0    | Added fasting and food moderation tracker |
+
 
