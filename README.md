@@ -101,5 +101,6 @@ Bug reports, feature suggestions, and pull requests are welcome. Feel free to fo
 | v1.3    | Added option to edit values by adjusting grams |
 | v1.4    | Added exercise and health routine checklist |
 | v2.0    | Added fasting and food moderation tracker |
+| v2.1    | Improved exercise tracker |
 
 

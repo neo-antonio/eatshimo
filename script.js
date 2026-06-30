@@ -1248,16 +1248,14 @@ function openAskAI() {
   if (p.gender) parts.push(p.gender);
   if (p.height) parts.push(`${p.height} cm tall`);
   if (p.weight) parts.push(`${p.weight} kg`);
-  const actLabels = { sedentary: 'sedentary', light: 'lightly active', moderate: 'moderately active', active: 'active', very_active: 'very active' };
-  if (p.activity && actLabels[p.activity]) parts.push(`${actLabels[p.activity]} lifestyle`);
-
-  const noEquip = document.getElementById('ex-no-equipment')?.checked ?? true;
-  const equipment = noEquip ? 'no equipment (bodyweight only)' : 'basic gym equipment available';
   const who = parts.length ? `a ${parts.join(', ')}` : 'someone';
 
-  const prompt = `Suggest 5 exercises for ${who}, with ${equipment}. For each, give: name, type (reps or timed in seconds), a one-line description, and a recommended daily goal. Format as a numbered list.`;
+  const exName = document.getElementById('new-ex-name')?.value.trim();
+  const exType = document.getElementById('new-ex-type')?.value === 'secs' ? 'second held' : 'repetition';
+  const exerciseDesc = exName ? `"${exName}"` : 'an exercise of your choice';
 
-  // Copy to clipboard as fallback, then open ChatGPT
+  const prompt = `For ${who}, estimate how many calories are burnt per ${exType} doing ${exerciseDesc}. Give a single decimal number (e.g. 0.4) I can enter directly, plus a one-line explanation of how you calculated it.`;
+
   navigator.clipboard?.writeText(prompt).catch(() => {});
   window.open('https://chatgpt.com/?q=' + encodeURIComponent(prompt), '_blank');
 }
@@ -1429,15 +1427,8 @@ function setRecurrenceToModal(prefix, rec) {
 }
 
 // ─── EXERCISE TRACKER ───────────────────────────────────
-const DEFAULT_EX_LIB = [
-  { id: 'pushup', name: 'Pushup', type: 'reps', goal: 0, met: 3.8, secPerUnit: 2 },
-  { id: 'plank',  name: 'Plank',  type: 'secs', goal: 0, met: 3.0, secPerUnit: 1 },
-  { id: 'squat',  name: 'Squat',  type: 'reps', goal: 0, met: 5.0, secPerUnit: 3 },
-];
-
 function getExLib() {
-  const stored = localStorage.getItem('eatshimo_ex_lib');
-  return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_EX_LIB));
+  return JSON.parse(localStorage.getItem('eatshimo_ex_lib') || '[]');
 }
 function saveExLib(lib) { localStorage.setItem('eatshimo_ex_lib', JSON.stringify(lib)); }
 
@@ -1489,7 +1480,9 @@ function renderExerciseCard() {
 
   if (applicable.length === 0) {
     const hasAny = activeList.length > 0;
-    list.innerHTML = `<p class="empty-msg" style="padding:12px 0 4px;">${hasAny ? 'No exercises scheduled for ' + DAY_NAMES[dayOfWeek] + '.' : 'No exercises added yet. Tap "+ Add Exercise" below.'}</p>`;
+    list.innerHTML = hasAny
+      ? `<p class="empty-msg" style="padding:12px 0 4px;">No exercises scheduled for ${DAY_NAMES[dayOfWeek]}.</p>`
+      : `<p class="card-desc">Log workouts like pushups, planks, or runs and track calories burned per session.</p>`;
     return;
   }
 
@@ -1567,67 +1560,33 @@ function openAddExModal(defaultRec) {
   const pastCb = document.getElementById('new-ex-apply-past');
   if (pastCb) pastCb.checked = false;
   updateRecurrenceUI('new-ex');
-  renderAddExModal();
+  document.getElementById('new-ex-name').value = '';
+  document.getElementById('new-ex-goal').value = '';
+  document.getElementById('new-ex-cals-per-unit').value = '';
   document.getElementById('add-ex-overlay').classList.remove('hidden');
 }
 function closeAddExModal() {
   document.getElementById('add-ex-overlay').classList.add('hidden');
-  document.getElementById('new-ex-name').value = '';
-  document.getElementById('new-ex-goal').value = '';
-  document.getElementById('new-ex-cals-per-unit').value = '';
   renderExerciseCard();
-}
-
-function renderAddExModal() {
-  const lib = getExLib();
-  const activeList = getActiveExList();
-  const activeIds = activeList.map(e => e.id);
-  const available = lib.filter(e => !activeIds.includes(e.id));
-  const active = activeList.map(e => lib.find(l => l.id === e.id)).filter(Boolean);
-
-  document.getElementById('add-ex-preset-list').innerHTML =
-    available.length > 0
-      ? available.map(ex => `<button class="ex-preset-btn" onclick="activateExercise('${ex.id}')">${ex.name} <span class="ex-type-badge">${ex.type === 'reps' ? 'Reps' : 'Secs'}</span></button>`).join('')
-      : '<p style="font-size:12px;color:var(--text-dim);padding:8px 0;">All exercises are already tracking.</p>';
-
-  document.getElementById('add-ex-active-list').innerHTML =
-    active.length > 0
-      ? active.map(ex => `<button class="ex-active-btn" onclick="deactivateExercise('${ex.id}')" title="Tap to remove">${ex.name} ✕</button>`).join('')
-      : '<p style="font-size:12px;color:var(--text-dim);padding:4px 0;">None tracking yet.</p>';
-}
-
-function activateExercise(exId) {
-  const list = getActiveExList();
-  if (!list.find(e => e.id === exId)) {
-    const rec = getRecurrenceFromModal('new-ex');
-    list.push({ id: exId, recurrence: rec });
-    saveActiveExList(list);
-  }
-  renderAddExModal();
-}
-
-function deactivateExercise(exId) {
-  saveActiveExList(getActiveExList().filter(e => e.id !== exId));
-  renderAddExModal();
 }
 
 function addCustomExercise() {
   const name = document.getElementById('new-ex-name').value.trim();
   const type = document.getElementById('new-ex-type').value;
   const goal = parseInt(document.getElementById('new-ex-goal').value) || 0;
-  if (!name) { alert('Please enter a name.'); return; }
+  const calsPerUnit = parseFloat(document.getElementById('new-ex-cals-per-unit').value) || 0;
+  if (!name) { alert('Please enter an exercise name.'); return; }
+  if (!calsPerUnit || calsPerUnit <= 0) { alert('Please enter calories burnt per rep/sec. Use "Ask AI for Calories Burnt" if unsure.'); return; }
   const lib = getExLib();
   const id = 'ex_' + Date.now();
-  const calsPerUnit = parseFloat(document.getElementById('new-ex-cals-per-unit').value) || 0;
-  lib.push({ id, name, type, goal, met: type === 'reps' ? 4.0 : 3.5, secPerUnit: type === 'reps' ? 2.5 : 1, calsPerUnit });
+  lib.push({ id, name, type, goal, calsPerUnit });
   saveExLib(lib);
   const rec = getRecurrenceFromModal('new-ex');
   const list = getActiveExList();
   list.push({ id, recurrence: rec });
   saveActiveExList(list);
-  document.getElementById('new-ex-name').value = '';
-  document.getElementById('new-ex-goal').value = '';
-  renderAddExModal();
+  document.getElementById('add-ex-overlay').classList.add('hidden');
+  renderExerciseCard();
 }
 
 // Edit Exercise Modal
@@ -1650,9 +1609,11 @@ function saveEditEx() {
   const idx = lib.findIndex(e => e.id === editExId);
   if (idx === -1) return;
   const name = document.getElementById('edit-ex-name').value.trim();
+  const calsPerUnit = parseFloat(document.getElementById('edit-ex-cals-per-unit').value) || 0;
+  if (!calsPerUnit || calsPerUnit <= 0) { alert('Please enter calories burnt per rep/sec.'); return; }
   if (name) lib[idx].name = name;
   lib[idx].goal = parseInt(document.getElementById('edit-ex-goal').value) || 0;
-  lib[idx].calsPerUnit = parseFloat(document.getElementById('edit-ex-cals-per-unit').value) || 0;
+  lib[idx].calsPerUnit = calsPerUnit;
   saveExLib(lib);
   const list = getActiveExList();
   const entryIdx = list.findIndex(e => e.id === editExId);
@@ -1795,7 +1756,7 @@ function renderChecklistCard() {
   );
 
   if (items.length === 0) {
-    list.innerHTML = '<p class="empty-msg" style="padding:12px 0 4px;">No routines added yet. Tap "+ Add Routine" below.</p>';
+    list.innerHTML = '<p class="card-desc">Track daily habits like vitamins, skincare, or medication with checkboxes for each occurrence.</p>';
     return;
   }
   if (applicable.length === 0) {
@@ -2077,7 +2038,7 @@ function renderFoodModCard() {
   if (settingEl) settingEl.value = setting;
 
   if (cats.length === 0) {
-    list.innerHTML = '<p class="empty-msg" style="padding:10px 0 4px;">No food categories yet. Tap "+ Add Food Category" to begin.</p>';
+    list.innerHTML = '<p class="card-desc">Set cooldown periods for foods like canned goods or sugary treats to space out how often you eat them.</p>';
     return;
   }
 
@@ -2092,7 +2053,7 @@ function renderFoodModCard() {
           <span class="foodmod-cooldown-default">${cat.cooldownDays}d cooldown</span>
         </div>
         <div class="foodmod-status ${isReady ? 'status-ready' : 'status-cooling'}">
-          ${isReady ? '✓ Ready' : ` ${rem}d left`}
+          ${isReady ? '✓ Ready' : `⏳ ${rem}d left`}
         </div>
       </div>
       <div class="foodmod-actions">

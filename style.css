@@ -199,6 +199,7 @@ button:active { transform: scale(0.97); }
 
 #food-list { display: flex; flex-direction: column; gap: 8px; }
 .empty-msg { color: var(--text-dim); font-size: 13px; text-align: center; padding: 28px 0; }
+.card-desc { color: var(--text-dim); font-size: 13px; line-height: 1.5; padding: 4px 0 8px; }
 
 /* ─── LIBRARY VIEW ALL ─── */
 .library-view-all {
@@ -731,11 +732,7 @@ footer {
 .interval-unit { font-size: 13px; color: var(--text-mid); font-weight: 500; }
 
 /* Add exercise modal chips */
-.ex-preset-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--input-border); border-radius: 8px; padding: 7px 12px; margin: 3px; font-size: 13px; font-weight: 500; box-shadow: none; }
-.ex-preset-btn:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
-.ex-preset-btn:hover .ex-type-badge { background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.9); }
-.ex-active-btn { display: inline-flex; align-items: center; gap: 5px; background: var(--border); color: #fff; border: none; border-radius: 8px; padding: 5px 10px; margin: 3px; font-size: 12px; font-weight: 500; box-shadow: none; }
-.ex-active-btn:hover { opacity: 0.75; box-shadow: none; }
+/* (legacy ex-preset-btn / ex-active-btn rules removed — presets no longer used) */
 
 /* ─── HEALTH ROUTINES CHECKLIST ─── */
 .cl-item { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--input-border); gap: 10px; }

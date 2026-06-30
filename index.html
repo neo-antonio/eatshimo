@@ -238,6 +238,18 @@
         </div>
       </section>
 
+      <!-- HABIT TRACKER -->
+      <section class="card collapsible-card" id="card-checklist">
+        <div class="collapsible-header" onclick="toggleCardCollapse('checklist')">
+          <h2>Habit Tracker</h2>
+          <span class="collapse-chevron" id="chevron-checklist">▲</span>
+        </div>
+        <div class="collapsible-body" id="body-checklist">
+          <div id="checklist-list"></div>
+          <button class="btn-add-card-item" onclick="openAddCLModal()">+ Add Habit</button>
+        </div>
+      </section>
+
       <!-- FASTING TRACKER -->
       <section class="card collapsible-card" id="card-fasting">
         <div class="collapsible-header" onclick="toggleCardCollapse('fasting')">
@@ -286,18 +298,6 @@
           </div>
           <div id="foodmod-list" style="margin-top:12px;"></div>
           <button class="btn-add-card-item" onclick="openFoodCatModal()">+ Add Food Category</button>
-        </div>
-      </section>
-
-      <!-- HABIT TRACKER -->
-      <section class="card collapsible-card" id="card-checklist">
-        <div class="collapsible-header" onclick="toggleCardCollapse('checklist')">
-          <h2>Habit Tracker</h2>
-          <span class="collapse-chevron" id="chevron-checklist">▲</span>
-        </div>
-        <div class="collapsible-body" id="body-checklist">
-          <div id="checklist-list"></div>
-          <button class="btn-add-card-item" onclick="openAddCLModal()">+ Add Habit</button>
         </div>
       </section>
 
@@ -706,22 +706,15 @@
     <div class="modal">
       <h2>Add Exercise</h2>
       <div class="ask-ai-row">
-        <label class="ask-ai-check">
-          <input type="checkbox" id="ex-no-equipment" checked />
-          No equipment
-        </label>
-        <button class="btn-ask-ai" onclick="openAskAI()">✦ Ask AI for Suggestions</button>
+        <button class="btn-ask-ai" onclick="openAskAI()">✦ Ask AI for Calories Burnt</button>
       </div>
-      <div class="section-divider">Available to Add</div>
-      <div id="add-ex-preset-list" style="margin-bottom:8px;"></div>
-      <div class="section-divider" style="margin-top:4px;">Currently Tracking</div>
-      <div id="add-ex-active-list" style="margin-bottom:4px;min-height:28px;"></div>
       <div class="section-divider">Repeat Schedule</div>
       <div class="rec-section">
         <div class="field full" style="margin-top:10px;">
           <select id="new-ex-recurrence" onchange="updateRecurrenceUI('new-ex')">
             <option value="weekly">Weekly (specific days)</option>
             <option value="once">This day only — no repeat</option>
+            <option value="every_x_days">Every N days</option>
             <option value="every_x_weeks">Every N weeks</option>
             <option value="every_x_months">Every N months (same date)</option>
             <option value="every_x_years">Every N years (same date)</option>
@@ -753,7 +746,7 @@
     </label>
   </div>
       </div>
-      <div class="section-divider" style="margin-top:14px;">Create Custom</div>
+      <div class="section-divider" style="margin-top:14px;">Exercise Details</div>
       <div class="form-grid" style="margin-top:10px;">
         <div class="field full"><label>Exercise Name</label><input type="text" id="new-ex-name" placeholder="e.g. Pull-up" /></div>
         <div class="field">
@@ -761,11 +754,11 @@
           <select id="new-ex-type"><option value="reps">Reps</option><option value="secs">Seconds</option></select>
         </div>
         <div class="field"><label>Daily Goal (optional)</label><input type="number" id="new-ex-goal" placeholder="e.g. 50" min="0" /></div>
-        <div class="field full"><label>Calories per rep / sec (optional)</label><input type="number" id="new-ex-cals-per-unit" placeholder="e.g. 0.5 — overrides auto-estimate" min="0" step="0.01" /></div>
+        <div class="field full"><label>Calories burnt per rep / sec <span style="color:var(--danger);">*</span></label><input type="number" id="new-ex-cals-per-unit" placeholder="e.g. 0.5" min="0" step="0.01" /></div>
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeAddExModal()">Close</button>
-        <button onclick="addCustomExercise()">Add Custom</button>
+        <button onclick="addCustomExercise()">Add Exercise</button>
       </div>
     </div>
   </div>
@@ -777,7 +770,7 @@
       <div class="form-grid">
         <div class="field full"><label>Name</label><input type="text" id="edit-ex-name" /></div>
         <div class="field full"><label>Daily Goal (0 = no goal)</label><input type="number" id="edit-ex-goal" min="0" placeholder="e.g. 50" /></div>
-        <div class="field full"><label>Calories per rep / sec (optional)</label><input type="number" id="edit-ex-cals-per-unit" placeholder="e.g. 0.5 — overrides auto-estimate" min="0" step="0.01" /></div>
+        <div class="field full"><label>Calories burnt per rep / sec <span style="color:var(--danger);">*</span></label><input type="number" id="edit-ex-cals-per-unit" placeholder="e.g. 0.5" min="0" step="0.01" /></div>
       </div>
       <div class="section-divider">Repeat Schedule</div>
       <div class="rec-section">
@@ -788,6 +781,7 @@
             <option value="every_x_weeks">Every N weeks</option>
             <option value="every_x_months">Every N months (same date)</option>
             <option value="every_x_years">Every N years (same date)</option>
+            <option value="every_x_days">Every N days</option>
           </select>
         </div>
         <div class="rec-row" id="edit-ex-days-row">
@@ -865,6 +859,7 @@
             <option value="every_x_weeks">Every N weeks</option>
             <option value="every_x_months">Every N months (same date)</option>
             <option value="every_x_years">Every N years (same date)</option>
+            <option value="every_x_days">Every N days</option>
           </select>
         </div>
         <div class="rec-row" id="new-cl-days-row">
@@ -916,6 +911,7 @@
             <option value="every_x_weeks">Every N weeks</option>
             <option value="every_x_months">Every N months (same date)</option>
             <option value="every_x_years">Every N years (same date)</option>
+            <option value="every_x_days">Every N days</option>
           </select>
         </div>
         <div class="rec-row" id="edit-cl-days-row">
@@ -1029,7 +1025,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v2.0</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v2.1</p>
   </footer>
 
 <style>
