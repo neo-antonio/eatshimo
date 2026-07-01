@@ -1474,6 +1474,7 @@ function renderExerciseCard() {
   if (!list) return;
 
   const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayOfWeek = new Date(key + 'T00:00:00').getDay();
   const applicable = activeList.filter(entry =>
     recurrenceAppliesOnDate(entry.recurrence, key) && !exEntryHasEnded(entry, key)
   );
@@ -1499,20 +1500,21 @@ function renderExerciseCard() {
     const r = entry.recurrence || {};
     let dayTags = '';
     if (r.type === 'once') dayTags = '<span class="ex-day-tag">Once</span>';
-    else if (r.type === 'every_x_weeks') dayTags = `<span class="ex-day-tag">Every ${r.interval||1}w</span>`;
+    else if (r.type === 'every_x_days')   dayTags = `<span class="ex-day-tag">Every ${r.interval||1}d</span>`;
+    else if (r.type === 'every_x_weeks')  dayTags = `<span class="ex-day-tag">Every ${r.interval||1}w</span>`;
     else if (r.type === 'every_x_months') dayTags = `<span class="ex-day-tag">Every ${r.interval||1}mo</span>`;
-    else if (r.type === 'every_x_years') dayTags = `<span class="ex-day-tag">Every ${r.interval||1}yr</span>`;
+    else if (r.type === 'every_x_years')  dayTags = `<span class="ex-day-tag">Every ${r.interval||1}yr</span>`;
     else if (r.type === 'weekly' && r.days && r.days.length < 7)
       dayTags = r.days.sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
     return `
-    <div class="ex-item">
+    <div class="ex-item" data-ex-id="${ex.id}">
       <div class="ex-header">
         <div class="ex-name-row">
           <span class="ex-name">${ex.name}</span>
           <span class="ex-type-badge">${ex.type === 'reps' ? 'Reps' : 'Secs'}</span>
           ${dayTags ? `<span class="ex-day-tags">${dayTags}</span>` : ''}
         </div>
-        <button class="btn-ex-settings" onclick="openEditExModal('${ex.id}')">⚙</button>
+        <button class="btn-ex-settings" data-ex-id="${ex.id}">⚙</button>
       </div>
       ${goal ? `<div class="ex-progress-bar-wrap"><div class="ex-progress-bar" style="width:${progress}%"></div></div>` : ''}
       <div class="ex-summary">
@@ -1522,16 +1524,32 @@ function renderExerciseCard() {
         ${kcal > 0 ? `<span class="ex-kcal">≈ ${kcal} kcal</span>` : ''}
       </div>
       <div class="ex-log-row">
-        <input type="number" class="ex-input" id="ex-input-${ex.id}" placeholder="${ex.type === 'reps' ? 'reps' : 'secs'}" min="1" />
-        <button class="btn-log-set" onclick="logExSet('${ex.id}')">Log Set</button>
-        ${sets.length > 0 ? `<button class="btn-remove-set" onclick="removeLastExSet('${ex.id}')">Undo</button>` : ''}
+        <input type="number" class="ex-input" data-ex-id="${ex.id}" placeholder="${ex.type === 'reps' ? 'reps' : 'secs'}" min="1" />
+        <button class="btn-log-set" data-ex-id="${ex.id}">Log Set</button>
+        ${sets.length > 0 ? `<button class="btn-remove-set" data-ex-id="${ex.id}">Undo</button>` : ''}
       </div>
     </div>`;
   }).join('');
+
+  // Event delegation — avoids inline onclick escaping issues
+  list.querySelectorAll('.btn-ex-settings').forEach(btn => {
+    btn.addEventListener('click', () => openEditExModal(btn.dataset.exId));
+  });
+  list.querySelectorAll('.btn-log-set').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = btn.closest('.ex-log-row').querySelector('.ex-input');
+      logExSetDirect(btn.dataset.exId, input);
+    });
+  });
+  list.querySelectorAll('.btn-remove-set').forEach(btn => {
+    btn.addEventListener('click', () => removeLastExSet(btn.dataset.exId));
+  });
+  list.querySelectorAll('.ex-input').forEach(input => {
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { logExSetDirect(input.dataset.exId, input); } });
+  });
 }
 
-function logExSet(exId) {
-  const input = document.getElementById('ex-input-' + exId);
+function logExSetDirect(exId, input) {
   const val = parseFloat(input.value);
   if (!val || val <= 0) return;
   const key = dateStr(currentDate), data = getDayData(key);
@@ -1540,6 +1558,11 @@ function logExSet(exId) {
   saveDayData(key, data);
   input.value = '';
   renderExerciseCard();
+}
+
+function logExSet(exId) {
+  const input = document.getElementById('ex-input-' + exId) || document.querySelector(`.ex-input[data-ex-id="${exId}"]`);
+  if (input) logExSetDirect(exId, input);
 }
 
 function removeLastExSet(exId) {
@@ -1751,6 +1774,8 @@ function renderChecklistCard() {
   if (!list) return;
 
   const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayOfWeek = new Date(key + 'T00:00:00').getDay();
+
   const applicable = items.filter(item =>
     recurrenceAppliesOnDate(item.recurrence, key) && !clItemHasEnded(item, key)
   );
@@ -1760,7 +1785,7 @@ function renderChecklistCard() {
     return;
   }
   if (applicable.length === 0) {
-    list.innerHTML = `<p class="empty-msg" style="padding:12px 0 4px;">No routines scheduled for ${DAY_NAMES[dayOfWeek]}.</p>`;
+    list.innerHTML = `<p class="empty-msg" style="padding:12px 0 4px;">No habits scheduled for ${DAY_NAMES[dayOfWeek]}.</p>`;
     return;
   }
 
@@ -1769,16 +1794,17 @@ function renderChecklistCard() {
     const cr = item.recurrence || {};
     let dayTags = '';
     if (cr.type === 'once') dayTags = '<span class="ex-day-tag">Once</span>';
-    else if (cr.type === 'every_x_weeks') dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}w</span>`;
+    else if (cr.type === 'every_x_days')   dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}d</span>`;
+    else if (cr.type === 'every_x_weeks')  dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}w</span>`;
     else if (cr.type === 'every_x_months') dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}mo</span>`;
-    else if (cr.type === 'every_x_years') dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}yr</span>`;
+    else if (cr.type === 'every_x_years')  dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}yr</span>`;
     else if (cr.type === 'weekly' && cr.days && cr.days.length < 7)
       dayTags = cr.days.sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
     const boxes = Array.from({ length: item.count }, (_, i) =>
-      `<button class="cl-box${i < checked ? ' checked' : ''}" onclick="toggleCLBox('${item.id}',${i})">${i < checked ? '✓' : ''}</button>`
+      `<button class="cl-box${i < checked ? ' checked' : ''}" data-item-id="${item.id}" data-box-index="${i}">${i < checked ? '✓' : ''}</button>`
     ).join('');
     return `
-    <div class="cl-item">
+    <div class="cl-item" data-item-id="${item.id}">
       <div class="cl-item-content">
         <div>
           <span class="cl-name">${item.name}</span>
@@ -1786,9 +1812,17 @@ function renderChecklistCard() {
         </div>
         <div class="cl-boxes">${boxes}</div>
       </div>
-      <button class="btn-cl-edit" onclick="openEditCLModal('${item.id}')">Edit</button>
+      <button class="btn-cl-edit" data-item-id="${item.id}">Edit</button>
     </div>`;
   }).join('');
+
+  // Attach events via data attributes — avoids inline quote escaping issues
+  list.querySelectorAll('.cl-box').forEach(btn => {
+    btn.addEventListener('click', () => toggleCLBox(btn.dataset.itemId, parseInt(btn.dataset.boxIndex)));
+  });
+  list.querySelectorAll('.btn-cl-edit').forEach(btn => {
+    btn.addEventListener('click', () => openEditCLModal(btn.dataset.itemId));
+  });
 }
 
 function toggleCLBox(itemId, boxIndex) {
@@ -2046,22 +2080,32 @@ function renderFoodModCard() {
     const rem = cooldownDaysRemaining(cat.id);
     const isReady = rem === 0;
     return `
-    <div class="foodmod-item">
+    <div class="foodmod-item" data-cat-id="${cat.id}">
       <div class="foodmod-item-top">
         <div>
           <span class="foodmod-cat-name">${cat.name}</span>
-          <span class="foodmod-cooldown-default">${cat.cooldownDays}d cooldown</span>
+          <span class="foodmod-cooldown-default">${cat.cooldownDays}d default</span>
         </div>
         <div class="foodmod-status ${isReady ? 'status-ready' : 'status-cooling'}">
-          ${isReady ? '✓ Ready' : `⏳ ${rem}d left`}
+          ${isReady ? '✓ Ready' : `${rem}d left`}
         </div>
       </div>
       <div class="foodmod-actions">
-        <button class="btn-foodmod-action" onclick="openFoodCatModal('${cat.id}')">Edit</button>
-        <button class="btn-foodmod-action" onclick="openEditCooldownModal('${cat.id}')">Cooldown</button>
+        <button class="btn-foodmod-action btn-foodmod-edit">Edit</button>
+        ${isReady
+          ? `<button class="btn-foodmod-action btn-foodmod-trigger">Start Cooldown</button>`
+          : `<button class="btn-foodmod-action btn-foodmod-cd">Edit Cooldown</button>`}
       </div>
     </div>`;
   }).join('');
+
+  // Attach events via data attributes (avoids inline quote escaping issues)
+  list.querySelectorAll('[data-cat-id]').forEach(item => {
+    const catId = item.dataset.catId;
+    item.querySelector('.btn-foodmod-edit')?.addEventListener('click', () => openFoodCatModal(catId));
+    item.querySelector('.btn-foodmod-trigger')?.addEventListener('click', () => triggerCooldown(catId));
+    item.querySelector('.btn-foodmod-cd')?.addEventListener('click', () => openEditCooldownModal(catId));
+  });
 }
 
 // Check + update cooldown when food is logged
@@ -2085,8 +2129,15 @@ function checkFoodModerator(foodName) {
   if (getCardEnabled('foodmod') && document.getElementById('foodmod-list')) renderFoodModCard();
 }
 
-// Food Category Modal
-let editingCatId = null;
+// Manually start cooldown for a category (without a food being logged)
+function triggerCooldown(catId) {
+  const cat = getFoodCats().find(c => c.id === catId);
+  if (!cat) return;
+  const cds = getCooldowns();
+  cds[catId] = { lastConsumed: dateStr(new Date()), currentCooldownDays: cat.cooldownDays };
+  saveCooldowns(cds);
+  renderFoodModCard();
+}
 let foodCatSelectedNames = [];
 
 function openFoodCatModal(catId) {
@@ -2203,30 +2254,64 @@ function openEditCooldownModal(catId) {
   editingCooldownCatId = catId;
   const cat = getFoodCats().find(c => c.id === catId);
   if (!cat) return;
+  const rem = cooldownDaysRemaining(catId);
   document.getElementById('editcooldown-cat-name').textContent = cat.name;
   document.getElementById('editcooldown-default').value = cat.cooldownDays;
-  document.getElementById('editcooldown-current').value = cooldownDaysRemaining(catId);
+  document.getElementById('editcooldown-current').value = rem;
+  document.getElementById('editcooldown-add').value = 1;
+  document.getElementById('editcooldown-reduce').value = 1;
+  document.getElementById('editcooldown-status').textContent =
+    rem > 0 ? `Currently on cooldown — ${rem} day${rem !== 1 ? 's' : ''} remaining.` : 'No active cooldown.';
   document.getElementById('editcooldown-overlay').classList.remove('hidden');
 }
 
-function saveEditCooldown() {
-  const newDefault  = parseInt(document.getElementById('editcooldown-default').value) || 1;
-  const newCurrent  = parseInt(document.getElementById('editcooldown-current').value) || 0;
+function _setCooldownRemaining(days) {
+  const cds = getCooldowns();
+  if (days <= 0) {
+    delete cds[editingCooldownCatId];
+  } else {
+    cds[editingCooldownCatId] = { lastConsumed: dateStr(new Date()), currentCooldownDays: days };
+  }
+  saveCooldowns(cds);
+  renderFoodModCard();
+  // Refresh status label
+  const rem = cooldownDaysRemaining(editingCooldownCatId);
+  const statusEl = document.getElementById('editcooldown-status');
+  if (statusEl) statusEl.textContent = rem > 0
+    ? `Currently on cooldown — ${rem} day${rem !== 1 ? 's' : ''} remaining.`
+    : 'No active cooldown.';
+  const currentEl = document.getElementById('editcooldown-current');
+  if (currentEl) currentEl.value = rem;
+}
+
+function applyCooldownExact() {
+  const val = parseInt(document.getElementById('editcooldown-current').value) || 0;
+  _setCooldownRemaining(val);
+}
+
+function applyCooldownAdd() {
+  const add = parseInt(document.getElementById('editcooldown-add').value) || 1;
+  const cur = cooldownDaysRemaining(editingCooldownCatId);
+  _setCooldownRemaining(cur + add);
+}
+
+function applyCooldownReduce() {
+  const reduce = parseInt(document.getElementById('editcooldown-reduce').value) || 1;
+  const cur = cooldownDaysRemaining(editingCooldownCatId);
+  _setCooldownRemaining(Math.max(0, cur - reduce));
+}
+
+function saveEditCooldownDefault() {
+  const newDefault = parseInt(document.getElementById('editcooldown-default').value) || 1;
   const cats = getFoodCats();
   const idx = cats.findIndex(c => c.id === editingCooldownCatId);
   if (idx !== -1) { cats[idx].cooldownDays = newDefault; saveFoodCats(cats); }
-  if (newCurrent > 0) {
-    const cds = getCooldowns();
-    const today = dateStr(new Date());
-    cds[editingCooldownCatId] = { lastConsumed: today, currentCooldownDays: newCurrent };
-    saveCooldowns(cds);
-  } else {
-    clearOneCooldown();
-    return;
-  }
   document.getElementById('editcooldown-overlay').classList.add('hidden');
   renderFoodModCard();
 }
+
+// Keep old saveEditCooldown as alias for backward compat
+function saveEditCooldown() { saveEditCooldownDefault(); }
 
 function clearOneCooldown() {
   const cds = getCooldowns();
