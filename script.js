@@ -2116,14 +2116,15 @@ function checkFoodModerator(foodName) {
   const cats = getFoodCats();
   const cds  = getCooldowns();
   const setting = getCooldownSetting();
-  const today = dateStr(new Date());
+  // Use the date being viewed, not today — so logging on yesterday counts from yesterday
+  const logDate = dateStr(currentDate);
   catIds.forEach(catId => {
     const cat = cats.find(c => c.id === catId);
     if (!cat) return;
     const rem = cooldownDaysRemaining(catId);
     let newCooldown = cat.cooldownDays;
     if (rem > 0 && setting === 'extend') newCooldown = rem + cat.cooldownDays;
-    cds[catId] = { lastConsumed: today, currentCooldownDays: newCooldown };
+    cds[catId] = { lastConsumed: logDate, currentCooldownDays: newCooldown };
   });
   saveCooldowns(cds);
   if (getCardEnabled('foodmod') && document.getElementById('foodmod-list')) renderFoodModCard();
@@ -2134,7 +2135,7 @@ function triggerCooldown(catId) {
   const cat = getFoodCats().find(c => c.id === catId);
   if (!cat) return;
   const cds = getCooldowns();
-  cds[catId] = { lastConsumed: dateStr(new Date()), currentCooldownDays: cat.cooldownDays };
+  cds[catId] = { lastConsumed: dateStr(currentDate), currentCooldownDays: cat.cooldownDays };
   saveCooldowns(cds);
   renderFoodModCard();
 }
@@ -2201,7 +2202,7 @@ function renderFoodCatSelectedChips() {
   el.innerHTML = foodCatSelectedNames.map(name => `
     <span class="foodcat-chip">
       ${name}
-      <button onclick="toggleFoodCatTag('${name.replace(/'/g, "\\'")}')" aria-label="Remove">✕</button>
+      <span class="chip-remove" onclick="toggleFoodCatTag(this.closest('.foodcat-chip').dataset.name)" data-name="${name.replace(/"/g, '&quot;')}" role="button" aria-label="Remove">✕</span>
     </span>`).join('');
 }
 
@@ -2232,8 +2233,50 @@ function saveFoodCat() {
     if (!tags[foodName].includes(catId)) tags[foodName].push(catId);
   });
   saveFoodTags(tags);
+
+  // Retroactively apply cooldowns for tagged foods already in daily logs
+  applyRetroactiveCooldowns(catId, days);
+
   document.getElementById('foodcat-overlay').classList.add('hidden');
   renderFoodModCard();
+}
+
+// Scan past daily logs and apply cooldown if a tagged food was logged within the cooldown window
+function applyRetroactiveCooldowns(catId, cooldownDays) {
+  const tags = getFoodTags();
+  const cds  = getCooldowns();
+  const setting = getCooldownSetting();
+  const todayStr = dateStr(new Date());
+  const todayMs  = new Date(todayStr + 'T00:00:00').getTime();
+
+  const taggedFoods = Object.keys(tags).filter(name => (tags[name] || []).includes(catId));
+  if (taggedFoods.length === 0) return;
+
+  let mostRecentDateStr = null;
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('eatshimo_day_')) continue;
+    const ds = k.replace('eatshimo_day_', '');
+    const logMs  = new Date(ds + 'T00:00:00').getTime();
+    const daysAgo = Math.floor((todayMs - logMs) / 864e5);
+    if (daysAgo < 0 || daysAgo >= cooldownDays) continue;
+    try {
+      const dayData = JSON.parse(localStorage.getItem(k));
+      const meals = dayData?.meals || [];
+      if (meals.some(m => taggedFoods.includes(m.name))) {
+        if (!mostRecentDateStr || ds > mostRecentDateStr) mostRecentDateStr = ds;
+      }
+    } catch (e) {}
+  }
+
+  if (!mostRecentDateStr) return;
+
+  const existingRem = cooldownDaysRemaining(catId);
+  let newCooldown = cooldownDays;
+  if (existingRem > 0 && setting === 'extend') newCooldown = existingRem + cooldownDays;
+  cds[catId] = { lastConsumed: mostRecentDateStr, currentCooldownDays: newCooldown };
+  saveCooldowns(cds);
 }
 
 function deleteFoodCat() {

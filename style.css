@@ -863,6 +863,9 @@ footer {
 .fasting-bar { height: 100%; background: var(--border); border-radius: 6px; transition: width 0.5s; }
 .fasting-pct { font-size: 11px; color: var(--text-dim); }
 
+.cooldown-adjust-row { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.cooldown-adjust-group { display: flex; flex-direction: column; gap: 6px; }
+
 /* ─── FOOD MODERATOR ─── */
 .foodmod-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .foodmod-setting-label { font-size: 13px; font-weight: 500; color: var(--text-mid); }
@@ -884,9 +887,11 @@ footer {
   background: var(--border); color: #fff; border-radius: 999px;
   padding: 5px 6px 5px 12px; font-size: 12px; font-weight: 600;
 }
-.foodcat-chip button {
-  background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 50%;
-  width: 18px; height: 18px; font-size: 10px; line-height: 1; padding: 0;
-  box-shadow: none; display: flex; align-items: center; justify-content: center;
+.foodcat-chip .chip-remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,0.25); color: #fff;
+  font-size: 10px; line-height: 1; cursor: pointer;
+  user-select: none;
 }
-.foodcat-chip button:hover { background: rgba(255,255,255,0.35); opacity: 1; box-shadow: none; }
+.foodcat-chip .chip-remove:hover { background: rgba(255,255,255,0.45); }
