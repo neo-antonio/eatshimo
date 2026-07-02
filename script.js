@@ -2202,7 +2202,7 @@ function renderFoodCatSelectedChips() {
   el.innerHTML = foodCatSelectedNames.map(name => `
     <span class="foodcat-chip">
       ${name}
-      <span class="chip-remove" onclick="toggleFoodCatTag(this.closest('.foodcat-chip').dataset.name)" data-name="${name.replace(/"/g, '&quot;')}" role="button" aria-label="Remove">✕</span>
+      <span class="chip-remove" onclick="toggleFoodCatTag(this.dataset.name)" data-name="${name.replace(/"/g, '&quot;')}" role="button" aria-label="Remove">✕</span>
     </span>`).join('');
 }
 
