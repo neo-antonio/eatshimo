@@ -2224,6 +2224,10 @@ function saveFoodCat() {
   }
   saveFoodCats(cats);
 
+  // Determine which foods are newly added to this category in this save
+  const prevTagged = Object.keys(tags).filter(fn => (tags[fn] || []).includes(catId));
+  const newlyTagged = foodCatSelectedNames.filter(fn => !prevTagged.includes(fn));
+
   // Save tags: remove this catId from all foods, then re-add to selected ones
   Object.keys(tags).forEach(foodName => {
     tags[foodName] = (tags[foodName] || []).filter(id => id !== catId);
@@ -2234,23 +2238,26 @@ function saveFoodCat() {
   });
   saveFoodTags(tags);
 
-  // Retroactively apply cooldowns for tagged foods already in daily logs
-  applyRetroactiveCooldowns(catId, days);
+  // Only retroactively apply cooldowns for foods NEWLY tagged in this save
+  if (newlyTagged.length > 0) {
+    applyRetroactiveCooldowns(catId, days, newlyTagged);
+  }
 
   document.getElementById('foodcat-overlay').classList.add('hidden');
   renderFoodModCard();
 }
 
-// Scan past daily logs and apply cooldown if a tagged food was logged within the cooldown window
-function applyRetroactiveCooldowns(catId, cooldownDays) {
-  const tags = getFoodTags();
-  const cds  = getCooldowns();
-  const setting = getCooldownSetting();
+// Scan past daily logs for newly-tagged foods and apply cooldown if found within the cooldown window.
+// ONLY runs if the category has no active cooldown — never overrides an existing one.
+function applyRetroactiveCooldowns(catId, cooldownDays, newlyTaggedFoods) {
+  if (!newlyTaggedFoods || newlyTaggedFoods.length === 0) return;
+
+  // If an active cooldown already exists, don't touch it
+  if (cooldownDaysRemaining(catId) > 0) return;
+
+  const cds = getCooldowns();
   const todayStr = dateStr(new Date());
   const todayMs  = new Date(todayStr + 'T00:00:00').getTime();
-
-  const taggedFoods = Object.keys(tags).filter(name => (tags[name] || []).includes(catId));
-  if (taggedFoods.length === 0) return;
 
   let mostRecentDateStr = null;
 
@@ -2258,24 +2265,20 @@ function applyRetroactiveCooldowns(catId, cooldownDays) {
     const k = localStorage.key(i);
     if (!k || !k.startsWith('eatshimo_day_')) continue;
     const ds = k.replace('eatshimo_day_', '');
-    const logMs  = new Date(ds + 'T00:00:00').getTime();
+    const logMs   = new Date(ds + 'T00:00:00').getTime();
     const daysAgo = Math.floor((todayMs - logMs) / 864e5);
     if (daysAgo < 0 || daysAgo >= cooldownDays) continue;
     try {
       const dayData = JSON.parse(localStorage.getItem(k));
       const meals = dayData?.meals || [];
-      if (meals.some(m => taggedFoods.includes(m.name))) {
+      if (meals.some(m => newlyTaggedFoods.includes(m.name))) {
         if (!mostRecentDateStr || ds > mostRecentDateStr) mostRecentDateStr = ds;
       }
     } catch (e) {}
   }
 
   if (!mostRecentDateStr) return;
-
-  const existingRem = cooldownDaysRemaining(catId);
-  let newCooldown = cooldownDays;
-  if (existingRem > 0 && setting === 'extend') newCooldown = existingRem + cooldownDays;
-  cds[catId] = { lastConsumed: mostRecentDateStr, currentCooldownDays: newCooldown };
+  cds[catId] = { lastConsumed: mostRecentDateStr, currentCooldownDays: cooldownDays };
   saveCooldowns(cds);
 }
 
