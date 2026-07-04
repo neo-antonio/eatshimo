@@ -102,5 +102,8 @@ Bug reports, feature suggestions, and pull requests are welcome. Feel free to fo
 | v1.4    | Added exercise and health routine checklist |
 | v2.0    | Added fasting and food moderation tracker |
 | v2.1    | Improved exercise tracker |
+| v3.0    | Better charts and statistics |
+
+
 
 
