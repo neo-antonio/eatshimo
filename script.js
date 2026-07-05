@@ -1,4 +1,4 @@
-// ─── DATA HELPERS ────────────────────────────────────────
+// ─── DATA HELPERS  ────────────────────────────────────────
 let foods = JSON.parse(localStorage.getItem('eatshimo_foods') || '[]');
 
 function saveFoodsToDisk() {
