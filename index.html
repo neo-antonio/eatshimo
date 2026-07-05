@@ -254,30 +254,13 @@
       <section class="card collapsible-card" id="card-fasting">
         <div class="collapsible-header" onclick="toggleCardCollapse('fasting')">
           <h2>Fasting</h2>
-          <span class="collapse-chevron" id="chevron-fasting">▲</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn-card-settings" onclick="event.stopPropagation();openFastingSettings()" title="Fasting Settings">⚙</button>
+            <span class="collapse-chevron" id="chevron-fasting">▲</span>
+          </div>
         </div>
         <div class="collapsible-body" id="body-fasting">
           <div id="fasting-status-display"></div>
-          <div class="fasting-presets" id="fasting-presets">
-            <button class="fast-preset-btn" data-preset="16:8" onclick="setFastingPreset('16:8')">16:8</button>
-            <button class="fast-preset-btn" data-preset="18:6" onclick="setFastingPreset('18:6')">18:6</button>
-            <button class="fast-preset-btn" data-preset="14:10" onclick="setFastingPreset('14:10')">14:10</button>
-            <button class="fast-preset-btn" data-preset="custom" onclick="setFastingPreset('custom')">Custom</button>
-          </div>
-          <div id="fasting-custom-row" class="fasting-custom-row" style="display:none;">
-            <div class="fasting-field">
-              <label>Fast (hrs)</label>
-              <input type="number" id="fast-hours" min="1" max="23" value="16" onchange="updateCustomFasting()" />
-            </div>
-            <div class="fasting-field">
-              <label>Eat (hrs)</label>
-              <input type="number" id="eat-hours" min="1" max="23" value="8" onchange="updateCustomFasting()" />
-            </div>
-          </div>
-          <div class="fasting-time-row">
-            <label class="fasting-time-label">Fasting starts at</label>
-            <input type="time" id="fast-start-time" value="20:00" onchange="saveFastingStartTime()" />
-          </div>
           <p id="fasting-window-label" class="fasting-window-label"></p>
         </div>
       </section>
@@ -286,17 +269,13 @@
       <section class="card collapsible-card" id="card-foodmod">
         <div class="collapsible-header" onclick="toggleCardCollapse('foodmod')">
           <h2>Food Moderator</h2>
-          <span class="collapse-chevron" id="chevron-foodmod">▲</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn-card-settings" onclick="event.stopPropagation();openFoodModSettings()" title="Cooldown Settings">⚙</button>
+            <span class="collapse-chevron" id="chevron-foodmod">▲</span>
+          </div>
         </div>
         <div class="collapsible-body" id="body-foodmod">
-          <div class="foodmod-setting-row">
-            <span class="foodmod-setting-label">When eaten during cooldown:</span>
-            <select id="foodmod-setting" onchange="saveCooldownSetting(this.value)">
-              <option value="reset">Reset to default cooldown</option>
-              <option value="extend">Extend by default cooldown days</option>
-            </select>
-          </div>
-          <div id="foodmod-list" style="margin-top:12px;"></div>
+          <div id="foodmod-list"></div>
           <button class="btn-add-card-item" onclick="openFoodCatModal()">+ Add Food Category</button>
         </div>
       </section>
@@ -417,54 +396,112 @@
         <div class="tdee-current" id="tdee-current-goal"></div>
       </section>
 
-      <section class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <h2 style="margin-bottom:0;">Trends</h2>
-          <div class="chart-period-tabs">
-            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
-            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
-            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
+      <!-- TRENDS & STATS -->
+      <section class="card" id="trends-card">
+        <div class="trends-header">
+          <h2>Trends &amp; Statistics</h2>
+          <div class="trends-controls">
+            <div class="trends-tab-row">
+              <div class="chart-period-tabs" id="chart-period-tabs">
+                <button class="period-tab active" data-period="daily">Daily</button>
+                <button class="period-tab" data-period="weekly">Weekly</button>
+                <button class="period-tab" data-period="monthly">Monthly</button>
+                <button class="period-tab" data-period="custom">Custom</button>
+              </div>
+              <button class="btn-chart-settings" onclick="openChartSettings()" title="Chart Settings">⚙</button>
+            </div>
+            <div id="chart-custom-range" style="display:none;" class="chart-custom-range">
+              <input type="date" id="chart-date-from" />
+              <span style="color:var(--text-dim);font-size:12px;">to</span>
+              <input type="date" id="chart-date-to" />
+              <button class="btn-chart-apply" onclick="applyCustomRange()">Apply</button>
+            </div>
           </div>
         </div>
-        <div class="chart-section"><div class="chart-title">Calories</div><div class="chart-wrap"><canvas id="chart-calories"></canvas></div></div>
-        <div class="chart-section"><div class="chart-title">Macros (Protein / Carbs / Fat)</div><div class="chart-wrap"><canvas id="chart-macros"></canvas></div></div>
-        <div class="chart-section" id="profile-chart-weight"><div class="chart-title">Weight (kg)</div><div class="chart-wrap"><canvas id="chart-weight"></canvas></div></div>
-      </section>
 
-      <section class="card" id="profile-chart-water">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <h2 style="margin-bottom:0;">Water Trend</h2>
-          <div class="chart-period-tabs">
-            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
-            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
-            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
-          </div>
+        <!-- Calories Consumed -->
+        <div class="chart-section" id="cs-calories">
+          <div class="chart-title">Calories Consumed (kcal)</div>
+          <div class="chart-wrap"><canvas id="chart-calories"></canvas></div>
         </div>
-        <div class="chart-section"><div class="chart-title">Water (ml)</div><div class="chart-wrap"><canvas id="chart-water"></canvas></div></div>
-      </section>
 
-      <section class="card" id="profile-chart-steps">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <h2 style="margin-bottom:0;">Steps Trend</h2>
-          <div class="chart-period-tabs">
-            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
-            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
-            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
+        <!-- Macros -->
+        <div class="chart-section" id="cs-macros">
+          <div class="chart-title-row">
+            <span class="chart-title">Macros</span>
+            <div class="macro-view-toggle">
+              <button class="mvt-btn active" id="mvt-stack" onclick="setMacroView('stack')">Stacked</button>
+              <button class="mvt-btn" id="mvt-pie" onclick="setMacroView('pie')">Pie</button>
+            </div>
           </div>
+          <div class="chart-wrap" id="macro-chart-wrap"><canvas id="chart-macros"></canvas></div>
         </div>
-        <div class="chart-section"><div class="chart-title">Steps</div><div class="chart-wrap"><canvas id="chart-steps"></canvas></div></div>
-      </section>
 
-      <section class="card" id="profile-chart-sleep">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <h2 style="margin-bottom:0;">Sleep Trend</h2>
-          <div class="chart-period-tabs">
-            <button class="period-tab active" onclick="setPeriod('daily',this)">Daily</button>
-            <button class="period-tab" onclick="setPeriod('weekly',this)">Weekly</button>
-            <button class="period-tab" onclick="setPeriod('monthly',this)">Monthly</button>
+        <!-- Calories Burnt -->
+        <div class="chart-section" id="cs-burnt">
+          <div class="chart-title-row">
+            <span class="chart-title">Calories Burnt</span>
+            <select class="chart-filter-select" id="burnt-filter" onchange="renderCharts()">
+              <option value="all">Steps + BMR + Exercise</option>
+              <option value="steps">Steps only</option>
+              <option value="bmr">BMR only</option>
+              <option value="exercise">Exercise only</option>
+              <option value="net">Net (Consumed − Burnt)</option>
+            </select>
           </div>
+          <div class="chart-wrap"><canvas id="chart-burnt"></canvas></div>
         </div>
-        <div class="chart-section"><div class="chart-title">Sleep (hrs)</div><div class="chart-wrap"><canvas id="chart-sleep"></canvas></div></div>
+
+        <!-- Weight -->
+        <div class="chart-section" id="cs-weight">
+          <div class="chart-title">Weight (kg)</div>
+          <div class="chart-wrap"><canvas id="chart-weight"></canvas></div>
+        </div>
+
+        <!-- Water -->
+        <div class="chart-section" id="cs-water">
+          <div class="chart-title">Water (ml)</div>
+          <p class="chart-rec" id="rec-water"></p>
+          <div class="chart-wrap"><canvas id="chart-water"></canvas></div>
+        </div>
+
+        <!-- Steps -->
+        <div class="chart-section" id="cs-steps">
+          <div class="chart-title">Steps</div>
+          <div class="chart-wrap"><canvas id="chart-steps"></canvas></div>
+        </div>
+
+        <!-- Sleep -->
+        <div class="chart-section" id="cs-sleep">
+          <div class="chart-title">Sleep (hrs)</div>
+          <p class="chart-rec" id="rec-sleep"></p>
+          <div class="chart-wrap"><canvas id="chart-sleep"></canvas></div>
+        </div>
+
+        <!-- Exercise Heatmap -->
+        <div class="chart-section" id="cs-ex-heatmap">
+          <div class="chart-title">Exercise Heatmap</div>
+          <div class="heatmap-legend">
+            <span class="hm-swatch hm-none"></span><span>No exercise</span>
+            <span class="hm-swatch hm-partial"></span><span>Not met</span>
+            <span class="hm-swatch hm-done"></span><span>Goal met</span>
+          </div>
+          <div class="heatmap-grid" id="heatmap-exercise"></div>
+          <div class="heatmap-rate" id="heatmap-ex-rate"></div>
+        </div>
+
+        <!-- Habit Heatmap -->
+        <div class="chart-section" id="cs-habit-heatmap">
+          <div class="chart-title">Habit Tracker Heatmap</div>
+          <div class="heatmap-legend">
+            <span class="hm-swatch hm-none"></span><span>No habits</span>
+            <span class="hm-swatch hm-partial"></span><span>Partial</span>
+            <span class="hm-swatch hm-done"></span><span>All done</span>
+            <span class="hm-swatch hm-fail"></span><span>Not met</span>
+          </div>
+          <div class="heatmap-grid" id="heatmap-habit"></div>
+          <div class="heatmap-rate" id="heatmap-habit-rate"></div>
+        </div>
       </section>
 
       <section class="card">
@@ -1036,6 +1073,77 @@
     </div>
   </div>
 
+  <!-- FASTING SETTINGS MODAL -->
+  <div id="fasting-settings-overlay" class="hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="modal">
+      <h2>Fasting Settings</h2>
+      <div class="fasting-presets" style="margin-bottom:14px;">
+        <button class="fast-preset-btn" data-preset="16:8" onclick="setFastingPreset('16:8')">16:8</button>
+        <button class="fast-preset-btn" data-preset="18:6" onclick="setFastingPreset('18:6')">18:6</button>
+        <button class="fast-preset-btn" data-preset="14:10" onclick="setFastingPreset('14:10')">14:10</button>
+        <button class="fast-preset-btn" data-preset="custom" onclick="setFastingPreset('custom')">Custom</button>
+      </div>
+      <div id="fasting-custom-row" class="fasting-custom-row" style="display:none;">
+        <div class="fasting-field">
+          <label>Fast (hrs)</label>
+          <input type="number" id="fast-hours" min="1" max="23" value="16" onchange="updateCustomFasting()" />
+        </div>
+        <div class="fasting-field">
+          <label>Eat (hrs)</label>
+          <input type="number" id="eat-hours" min="1" max="23" value="8" onchange="updateCustomFasting()" />
+        </div>
+      </div>
+      <div class="fasting-time-row" style="margin-top:12px;">
+        <label class="fasting-time-label">Fasting starts at</label>
+        <input type="time" id="fast-start-time" value="20:00" onchange="saveFastingStartTime()" />
+      </div>
+      <div class="modal-actions">
+        <button onclick="document.getElementById('fasting-settings-overlay').classList.add('hidden');renderFastingCard()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOD MOD SETTINGS MODAL -->
+  <div id="foodmod-settings-overlay" class="hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="modal">
+      <h2>Cooldown Behaviour</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">What happens when you eat a food while it's still in cooldown?</p>
+      <div class="form-grid">
+        <div class="field full">
+          <select id="foodmod-setting" onchange="saveCooldownSetting(this.value)">
+            <option value="reset">Reset to default cooldown</option>
+            <option value="extend">Extend by default cooldown days</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button onclick="document.getElementById('foodmod-settings-overlay').classList.add('hidden')">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHART SETTINGS MODAL -->
+  <div id="chart-settings-overlay" class="hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="modal">
+      <h2>Chart Settings</h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Choose which charts to display. Calories cannot be turned off.</p>
+      <div class="chart-settings-list" id="chart-settings-list">
+        <label class="chart-setting-row"><input type="checkbox" checked disabled /> <span>Calories Consumed</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-macros" onchange="saveChartSettings()" /> <span>Macros</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-burnt" onchange="saveChartSettings()" /> <span>Calories Burnt</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-weight" onchange="saveChartSettings()" /> <span>Weight</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-water" onchange="saveChartSettings()" /> <span>Water</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-steps" onchange="saveChartSettings()" /> <span>Steps</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-sleep" onchange="saveChartSettings()" /> <span>Sleep</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-ex-heatmap" onchange="saveChartSettings()" /> <span>Exercise Heatmap</span></label>
+        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-habit-heatmap" onchange="saveChartSettings()" /> <span>Habit Heatmap</span></label>
+      </div>
+      <div class="modal-actions">
+        <button onclick="document.getElementById('chart-settings-overlay').classList.add('hidden')">Done</button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -1050,7 +1158,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v2.3</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v3.0</p>
   </footer>
 
 <style>

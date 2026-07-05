@@ -138,7 +138,7 @@ function showPage(page, btn, bnavId) {
   if (page !== 'library') libraryExpanded = false;
   if (page === 'daily')   renderDailyLog();
   if (page === 'library') renderLibrary();
-  if (page === 'profile') { loadProfile(); renderCharts(); renderThemePicker(); loadCardToggles(); }
+  if (page === 'profile') { loadProfile(); renderCharts(); initPeriodTabs(); loadChartSettingsUI(); renderThemePicker(); loadCardToggles(); }
 }
 
 // ─── DATE NAV ────────────────────────────────────────────
@@ -594,102 +594,448 @@ function setTDEEGoal(type) {
 
 // ─── CHARTS ──────────────────────────────────────────────
 let chartPeriod = 'daily';
+let chartDateFrom = null;  // YYYY-MM-DD string for custom range
+let chartDateTo   = null;
+let macroView = 'stack';   // 'stack' | 'pie'
 let charts = {};
 
-function setPeriod(period, btn) {
-  chartPeriod = period;
-  // Sync all period-tab groups to the selected period
-  document.querySelectorAll('.period-tab').forEach(t => {
-    const tabPeriod = t.getAttribute('onclick').match(/'(\w+)'/)[1];
-    t.classList.toggle('active', tabPeriod === period);
+// Chart visibility settings (all on by default)
+const CHART_DEFAULTS = { macros:true, burnt:false, weight:true, water:false, steps:false, sleep:false, 'ex-heatmap':false, 'habit-heatmap':false };
+function getChartSettings() {
+  const stored = JSON.parse(localStorage.getItem('eatshimo_chart_settings') || 'null');
+  return stored || { ...CHART_DEFAULTS };
+}
+function saveChartSettings() {
+  const keys = ['macros','burnt','weight','water','steps','sleep','ex-heatmap','habit-heatmap'];
+  const settings = {};
+  keys.forEach(k => {
+    const el = document.getElementById('cs-toggle-' + k);
+    settings[k] = el ? el.checked : true;
+  });
+  localStorage.setItem('eatshimo_chart_settings', JSON.stringify(settings));
+  applyChartVisibility(settings);
+  renderCharts();
+}
+function applyChartVisibility(settings) {
+  const map = { macros:'cs-macros', burnt:'cs-burnt', weight:'cs-weight', water:'cs-water', steps:'cs-steps', sleep:'cs-sleep', 'ex-heatmap':'cs-ex-heatmap', 'habit-heatmap':'cs-habit-heatmap' };
+  Object.entries(map).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (settings[k] !== false) ? '' : 'none';
+  });
+}
+function loadChartSettingsUI() {
+  const settings = getChartSettings();
+  Object.keys(settings).forEach(k => {
+    const el = document.getElementById('cs-toggle-' + k);
+    if (el) el.checked = settings[k] !== false;
+  });
+  applyChartVisibility(settings);
+}
+function openChartSettings() {
+  loadChartSettingsUI();
+  document.getElementById('chart-settings-overlay').classList.remove('hidden');
+}
+
+// Fasting / Food Mod settings modals
+function openFastingSettings() {
+  const cfg = getFastingConfig();
+  // Sync preset buttons
+  document.querySelectorAll('#fasting-settings-overlay .fast-preset-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.preset === cfg.preset);
+  });
+  const customRow = document.getElementById('fasting-custom-row');
+  if (customRow) customRow.style.display = cfg.preset === 'custom' ? '' : 'none';
+  const fhEl = document.getElementById('fast-hours');
+  const ehEl = document.getElementById('eat-hours');
+  if (fhEl) fhEl.value = cfg.fastingHours;
+  if (ehEl) ehEl.value = cfg.eatingHours;
+  const stEl = document.getElementById('fast-start-time');
+  if (stEl) stEl.value = `${String(cfg.startHour||20).padStart(2,'0')}:${String(cfg.startMin||0).padStart(2,'0')}`;
+  document.getElementById('fasting-settings-overlay').classList.remove('hidden');
+}
+function openFoodModSettings() {
+  const settingEl = document.getElementById('foodmod-setting');
+  if (settingEl) settingEl.value = getCooldownSetting();
+  document.getElementById('foodmod-settings-overlay').classList.remove('hidden');
+}
+
+// Period tabs with smart disabling based on date range
+function initPeriodTabs() {
+  const tabs = document.querySelectorAll('#chart-period-tabs .period-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const period = tab.dataset.period;
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      chartPeriod = period;
+      const customRange = document.getElementById('chart-custom-range');
+      if (customRange) customRange.style.display = period === 'custom' ? '' : 'none';
+      if (period !== 'custom') renderCharts();
+    });
+  });
+}
+
+function applyCustomRange() {
+  chartDateFrom = document.getElementById('chart-date-from').value;
+  chartDateTo   = document.getElementById('chart-date-to').value;
+  if (!chartDateFrom || !chartDateTo || chartDateFrom > chartDateTo) return;
+  // Smart: disable daily if range > 90 days
+  const fromMs = new Date(chartDateFrom + 'T00:00:00').getTime();
+  const toMs   = new Date(chartDateTo   + 'T00:00:00').getTime();
+  const days   = Math.ceil((toMs - fromMs) / 864e5);
+  const tabs = document.querySelectorAll('#chart-period-tabs .period-tab');
+  tabs.forEach(t => {
+    const p = t.dataset.period;
+    if (p === 'daily'   && days > 90) { t.disabled = true; t.style.opacity = '0.4'; }
+    else if (p === 'weekly' && days > 730) { t.disabled = true; t.style.opacity = '0.4'; }
+    else { t.disabled = false; t.style.opacity = ''; }
   });
   renderCharts();
 }
 
-function getChartData() {
-  if (chartPeriod === 'daily') {
-    const result = [], today = nowInTZ();
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(today); d.setDate(today.getDate() - i);
-      const ds = dateStr(d), data = getDayData(ds);
-      result.push({ label: d.toLocaleDateString('en-US',{month:'short',day:'numeric'}), calories: Math.round(data.meals.reduce((s,m)=>s+m.calories,0)), protein: Math.round(data.meals.reduce((s,m)=>s+m.protein,0)), carbs: Math.round(data.meals.reduce((s,m)=>s+m.carbs,0)), fat: Math.round(data.meals.reduce((s,m)=>s+m.fat,0)), weight: data.weight, water: data.water||0, steps: data.steps||0, sleep: data.sleep||null });
-    }
+function setMacroView(view) {
+  macroView = view;
+  document.getElementById('mvt-stack').classList.toggle('active', view === 'stack');
+  document.getElementById('mvt-pie').classList.toggle('active', view === 'pie');
+  renderCharts();
+}
+
+// ── Data helpers ──────────────────────────────────────────
+function calcDayBMR(ds) {
+  const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
+  if (!p.weight || !p.height || !p.age) return 0;
+  const bmr = p.gender === 'female'
+    ? 10 * p.weight + 6.25 * p.height - 5 * p.age - 161
+    : 10 * p.weight + 6.25 * p.height - 5 * p.age + 5;
+  return Math.round(bmr);
+}
+
+function calcDayExerciseCals(ds) {
+  const data = getDayData(ds);
+  const lib  = getExLib();
+  const exData = data.exercises || {};
+  let total = 0;
+  Object.entries(exData).forEach(([exId, exLog]) => {
+    const ex = lib.find(e => e.id === exId);
+    if (!ex) return;
+    const sets = exLog.sets || [];
+    const totalUnits = sets.reduce((a, b) => a + b, 0);
+    if (totalUnits > 0) total += calcExCals(ex, totalUnits);
+  });
+  return total;
+}
+
+function getDatesInRange() {
+  const today = nowInTZ();
+  const result = [];
+  if (chartPeriod === 'custom' && chartDateFrom && chartDateTo) {
+    const from = new Date(chartDateFrom + 'T00:00:00');
+    const to   = new Date(chartDateTo   + 'T00:00:00');
+    for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1))
+      result.push(dateStr(new Date(d)));
     return result;
   }
-  if (chartPeriod === 'weekly') {
-    const weeks = {}, today = nowInTZ();
-    for (let i = 83; i >= 0; i--) {
-      const d = new Date(today); d.setDate(today.getDate() - i);
-      const ds = dateStr(d), data = getDayData(ds);
-      const weekStart = new Date(d); weekStart.setDate(d.getDate() - d.getDay());
-      const wk = dateStr(weekStart);
-      if (!weeks[wk]) weeks[wk] = { label: weekStart.toLocaleDateString('en-US',{month:'short',day:'numeric'}), calories:0, protein:0, carbs:0, fat:0, water:0, steps:0, weightSum:0, weightCount:0, sleepSum:0, sleepCount:0, days:0 };
-      weeks[wk].calories += data.meals.reduce((s,m)=>s+m.calories,0);
-      weeks[wk].protein  += data.meals.reduce((s,m)=>s+m.protein,0);
-      weeks[wk].carbs    += data.meals.reduce((s,m)=>s+m.carbs,0);
-      weeks[wk].fat      += data.meals.reduce((s,m)=>s+m.fat,0);
-      weeks[wk].water    += data.water||0; weeks[wk].steps += data.steps||0;
-      if (data.weight) { weeks[wk].weightSum+=data.weight; weeks[wk].weightCount++; }
-      if (data.sleep)  { weeks[wk].sleepSum+=data.sleep;   weeks[wk].sleepCount++;  }
-      weeks[wk].days++;
-    }
-    return Object.values(weeks).map(w=>({ ...w, calories:Math.round(w.calories/w.days), protein:Math.round(w.protein/w.days), carbs:Math.round(w.carbs/w.days), fat:Math.round(w.fat/w.days), water:Math.round(w.water/w.days), steps:Math.round(w.steps/w.days), weight:w.weightCount>0?parseFloat((w.weightSum/w.weightCount).toFixed(1)):null, sleep:w.sleepCount>0?parseFloat((w.sleepSum/w.sleepCount).toFixed(1)):null }));
+  const days = chartPeriod === 'daily' ? 30 : chartPeriod === 'weekly' ? 84 : 365;
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    result.push(dateStr(d));
   }
-  if (chartPeriod === 'monthly') {
-    const months = {}, today = nowInTZ();
-    for (let i = 364; i >= 0; i--) {
-      const d = new Date(today); d.setDate(today.getDate() - i);
-      const ds = dateStr(d), data = getDayData(ds);
-      const mk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      if (!months[mk]) months[mk] = { label: d.toLocaleDateString('en-US',{month:'short',year:'numeric'}), calories:0, protein:0, carbs:0, fat:0, water:0, steps:0, weightSum:0, weightCount:0, sleepSum:0, sleepCount:0, days:0 };
-      months[mk].calories += data.meals.reduce((s,m)=>s+m.calories,0);
-      months[mk].protein  += data.meals.reduce((s,m)=>s+m.protein,0);
-      months[mk].carbs    += data.meals.reduce((s,m)=>s+m.carbs,0);
-      months[mk].fat      += data.meals.reduce((s,m)=>s+m.fat,0);
-      months[mk].water    += data.water||0; months[mk].steps += data.steps||0;
-      if (data.weight) { months[mk].weightSum+=data.weight; months[mk].weightCount++; }
-      if (data.sleep)  { months[mk].sleepSum+=data.sleep;   months[mk].sleepCount++;  }
-      months[mk].days++;
-    }
-    return Object.values(months).map(m=>({ ...m, calories:Math.round(m.calories/m.days), protein:Math.round(m.protein/m.days), carbs:Math.round(m.carbs/m.days), fat:Math.round(m.fat/m.days), water:Math.round(m.water/m.days), steps:Math.round(m.steps/m.days), weight:m.weightCount>0?parseFloat((m.weightSum/m.weightCount).toFixed(1)):null, sleep:m.sleepCount>0?parseFloat((m.sleepSum/m.sleepCount).toFixed(1)):null }));
-  }
+  return result;
 }
 
-function makeChart(id, label, data, color, yLabel) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-  const ctx = document.getElementById(id);
-  if (!ctx || !data || data.length === 0) return;
-  charts[id] = new Chart(ctx, {
-    type: 'line',
-    data: { labels: data.map(d=>d.label), datasets: [{ label: yLabel||label, data: data.map(d=>d[label]||null), borderColor: color, backgroundColor: color+'22', borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: true, spanGaps: true }] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false, backgroundColor:'#23272f', titleColor:'#f0f1f4', bodyColor:'#9aa0b4', borderColor:'#3a3f4d', borderWidth:1} }, scales:{ x:{grid:{color:'#2a2f3d'},ticks:{font:{size:11,family:'Ubuntu'},color:'#6b7385',maxRotation:45,maxTicksLimit:10}}, y:{grid:{color:'#2a2f3d'},ticks:{font:{size:11,family:'Ubuntu'},color:'#6b7385'},beginAtZero:true} } }
+function getChartData() {
+  const dates = getDatesInRange();
+  const raw = dates.map(ds => {
+    const data = getDayData(ds);
+    const stepCals = calcStepCalories(data.steps || 0);
+    const exCals   = calcDayExerciseCals(ds);
+    const bmr      = calcDayBMR(ds);
+    const consumed = Math.round(data.meals.reduce((s, m) => s + m.calories, 0));
+    return {
+      ds,
+      label:    new Date(ds + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }),
+      calories: consumed,
+      protein:  Math.round(data.meals.reduce((s, m) => s + m.protein, 0)),
+      carbs:    Math.round(data.meals.reduce((s, m) => s + m.carbs,   0)),
+      fat:      Math.round(data.meals.reduce((s, m) => s + m.fat,     0)),
+      weight:   data.weight || null,
+      water:    data.water  || 0,
+      steps:    data.steps  || 0,
+      sleep:    data.sleep  || null,
+      stepCals, exCals, bmr,
+      netCals:  Math.max(0, consumed - stepCals - exCals - bmr),
+    };
+  });
+
+  if (chartPeriod === 'daily' || (chartPeriod === 'custom' && getDatesInRange().length <= 90)) {
+    return raw.map(r => ({ ...r }));
+  }
+
+  // Aggregate by week or month
+  const byKey = {};
+  raw.forEach(r => {
+    const d = new Date(r.ds + 'T00:00:00');
+    let key, label;
+    if (chartPeriod === 'monthly' || (chartPeriod === 'custom' && getDatesInRange().length > 90)) {
+      key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      label = d.toLocaleDateString('en-US', { month:'short', year:'numeric' });
+    } else {
+      const wStart = new Date(d); wStart.setDate(d.getDate() - d.getDay());
+      key   = dateStr(wStart);
+      label = wStart.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    }
+    if (!byKey[key]) byKey[key] = { label, items: [] };
+    byKey[key].items.push(r);
+  });
+
+  return Object.values(byKey).map(({ label, items }) => {
+    const n = items.length || 1;
+    const avg = f => Math.round(items.reduce((s, i) => s + (f(i)||0), 0) / n);
+    const avgF = f => { const v = items.reduce((s, i) => s + (f(i)||0), 0); return v ? parseFloat((v/n).toFixed(1)) : null; };
+    const wts = items.filter(i => i.weight).map(i => i.weight);
+    return {
+      label,
+      calories: avg(i => i.calories),
+      protein:  avg(i => i.protein),
+      carbs:    avg(i => i.carbs),
+      fat:      avg(i => i.fat),
+      water:    avg(i => i.water),
+      steps:    avg(i => i.steps),
+      sleep:    avgF(i => i.sleep),
+      weight:   wts.length ? parseFloat((wts.reduce((a,b)=>a+b,0)/wts.length).toFixed(1)) : null,
+      stepCals: avg(i => i.stepCals),
+      exCals:   avg(i => i.exCals),
+      bmr:      avg(i => i.bmr),
+      netCals:  avg(i => i.netCals),
+    };
   });
 }
 
-function makeMacroChart(id, data) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+// ── Chart rendering ───────────────────────────────────────
+const CHART_OPTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend:{display:false}, tooltip:{mode:'index',intersect:false,backgroundColor:'#23272f',titleColor:'#f0f1f4',bodyColor:'#9aa0b4',borderColor:'#3a3f4d',borderWidth:1} },
+  scales: { x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{font:{size:11,family:'Ubuntu'},color:'var(--text-dim)',maxRotation:45,maxTicksLimit:12}}, y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{font:{size:11,family:'Ubuntu'},color:'var(--text-dim)'},beginAtZero:true} }
+};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function makeBarChart(id, labels, datasets, legendOn) {
+  destroyChart(id);
   const ctx = document.getElementById(id);
-  if (!ctx || !data || data.length === 0) return;
+  if (!ctx) return;
+  const opts = JSON.parse(JSON.stringify(CHART_OPTS));
+  opts.plugins.legend.display = !!legendOn;
+  if (legendOn) opts.plugins.legend.labels = { font:{size:11,family:'Ubuntu'}, color:'var(--text-dim)', boxWidth:12 };
+  charts[id] = new Chart(ctx, { type:'bar', data:{ labels, datasets }, options:opts });
+}
+
+function makeLineChart(id, labels, color, values) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const opts = JSON.parse(JSON.stringify(CHART_OPTS));
   charts[id] = new Chart(ctx, {
     type: 'line',
-    data: { labels: data.map(d=>d.label), datasets: [
-      { label:'Protein', data:data.map(d=>d.protein||null), borderColor:'#c0523a', backgroundColor:'#c0523a12', borderWidth:2.5, pointRadius:3, tension:0.35, fill:false, spanGaps:true },
-      { label:'Carbs',   data:data.map(d=>d.carbs||null),   borderColor:'#7b8fb0', backgroundColor:'#7b8fb012', borderWidth:2.5, pointRadius:3, tension:0.35, fill:false, spanGaps:true },
-      { label:'Fat',     data:data.map(d=>d.fat||null),     borderColor:'#4a8c72', backgroundColor:'#4a8c7212', borderWidth:2.5, pointRadius:3, tension:0.35, fill:false, spanGaps:true },
-    ]},
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true,labels:{font:{size:12,family:'Ubuntu'},color:'#9aa0b4',boxWidth:12}}, tooltip:{mode:'index',intersect:false, backgroundColor:'#23272f', titleColor:'#f0f1f4', bodyColor:'#9aa0b4', borderColor:'#3a3f4d', borderWidth:1} }, scales:{ x:{grid:{color:'#2a2f3d'},ticks:{font:{size:11,family:'Ubuntu'},color:'#6b7385',maxRotation:45,maxTicksLimit:10}}, y:{grid:{color:'#2a2f3d'},ticks:{font:{size:11,family:'Ubuntu'},color:'#6b7385'},beginAtZero:true} } }
+    data: { labels, datasets: [{ data:values, borderColor:color, backgroundColor:color+'22', borderWidth:2.5, pointRadius:3, tension:0.35, fill:true, spanGaps:true }] },
+    options: opts
   });
+}
+
+function makePieChart(id, labels, values, colors) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const opts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true,position:'bottom',labels:{font:{size:11,family:'Ubuntu'},color:'var(--text-dim)',boxWidth:12}}, tooltip:{backgroundColor:'#23272f',titleColor:'#f0f1f4',bodyColor:'#9aa0b4'} } };
+  charts[id] = new Chart(ctx, { type:'pie', data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2 }] }, options:opts });
+}
+
+function getAccentColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#3d4452';
 }
 
 function renderCharts() {
   const data = getChartData();
   if (!data || data.length === 0) return;
-  makeChart('chart-calories', 'calories', data, '#555c6b', 'kcal');
-  makeMacroChart('chart-macros', data);
-  makeChart('chart-weight', 'weight', data, '#555c6b', 'kg');
-  makeChart('chart-water',  'water',  data, '#7b8fb0', 'ml');
-  makeChart('chart-steps',  'steps',  data, '#4a8c72', 'steps');
-  makeChart('chart-sleep',  'sleep',  data, '#9b7fd4', 'hrs');
+
+  const labels   = data.map(d => d.label);
+  const accent   = getAccentColor();
+  const settings = getChartSettings();
+  applyChartVisibility(settings);
+
+  // ── Calories (vertical bar) ──
+  makeBarChart('chart-calories', labels, [{
+    label:'Calories', data:data.map(d=>d.calories), backgroundColor:accent+'cc', borderColor:accent, borderWidth:1, borderRadius:3
+  }], false);
+
+  // ── Macros ──
+  if (settings.macros !== false) {
+    if (macroView === 'pie') {
+      const totP = data.reduce((s,d)=>s+d.protein,0);
+      const totC = data.reduce((s,d)=>s+d.carbs,0);
+      const totF = data.reduce((s,d)=>s+d.fat,0);
+      // Resize canvas for pie
+      const wrap = document.getElementById('macro-chart-wrap');
+      if (wrap) wrap.style.height = '220px';
+      makePieChart('chart-macros', ['Protein','Carbs','Fat'], [totP,totC,totF], ['#c0523a','#7b8fb0','#4a8c72']);
+    } else {
+      const wrap = document.getElementById('macro-chart-wrap');
+      if (wrap) wrap.style.height = '';
+      makeBarChart('chart-macros', labels, [
+        { label:'Protein', data:data.map(d=>d.protein), backgroundColor:'#c0523acc', borderWidth:0, borderRadius:2 },
+        { label:'Carbs',   data:data.map(d=>d.carbs),   backgroundColor:'#7b8fb0cc', borderWidth:0, borderRadius:2 },
+        { label:'Fat',     data:data.map(d=>d.fat),     backgroundColor:'#4a8c72cc', borderWidth:0, borderRadius:2 },
+      ], true);
+      // Make stacked
+      if (charts['chart-macros']) {
+        charts['chart-macros'].options.scales.x.stacked = true;
+        charts['chart-macros'].options.scales.y.stacked = true;
+        charts['chart-macros'].update();
+      }
+    }
+  }
+
+  // ── Calories Burnt ──
+  if (settings.burnt !== false) {
+    const filter = document.getElementById('burnt-filter')?.value || 'all';
+    let bDatasets;
+    if (filter === 'steps') {
+      bDatasets = [{ label:'Steps', data:data.map(d=>d.stepCals), backgroundColor:'#4a8c72cc', borderWidth:0, borderRadius:2 }];
+    } else if (filter === 'bmr') {
+      bDatasets = [{ label:'BMR', data:data.map(d=>d.bmr), backgroundColor:'#7b8fb0cc', borderWidth:0, borderRadius:2 }];
+    } else if (filter === 'exercise') {
+      bDatasets = [{ label:'Exercise', data:data.map(d=>d.exCals), backgroundColor:'#c0523acc', borderWidth:0, borderRadius:2 }];
+    } else if (filter === 'net') {
+      bDatasets = [{ label:'Net (Consumed − Burnt)', data:data.map(d=>d.netCals), backgroundColor:accent+'cc', borderWidth:0, borderRadius:2 }];
+    } else {
+      bDatasets = [
+        { label:'Steps',    data:data.map(d=>d.stepCals), backgroundColor:'#4a8c72cc', borderWidth:0, borderRadius:2 },
+        { label:'BMR',      data:data.map(d=>d.bmr),      backgroundColor:'#7b8fb0cc', borderWidth:0, borderRadius:2 },
+        { label:'Exercise', data:data.map(d=>d.exCals),   backgroundColor:'#c0523acc', borderWidth:0, borderRadius:2 },
+      ];
+    }
+    makeBarChart('chart-burnt', labels, bDatasets, filter === 'all');
+    if (filter === 'all' && charts['chart-burnt']) {
+      charts['chart-burnt'].options.scales.x.stacked = true;
+      charts['chart-burnt'].options.scales.y.stacked = true;
+      charts['chart-burnt'].update();
+    }
+  }
+
+  // ── Weight (line) ──
+  if (settings.weight !== false)
+    makeLineChart('chart-weight', labels, accent, data.map(d=>d.weight));
+
+  // ── Water recommendations ──
+  const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
+  if (settings.water !== false) {
+    let recText = '';
+    if (p.weight) {
+      const rec = Math.round(p.weight * 35);
+      recText = `Recommended: <strong>${rec} ml/day</strong> based on your weight (35 ml/kg).`;
+    }
+    const recEl = document.getElementById('rec-water');
+    if (recEl) recEl.innerHTML = recText;
+    makeBarChart('chart-water', labels, [{ label:'Water (ml)', data:data.map(d=>d.water), backgroundColor:'#7b8fb0cc', borderWidth:0, borderRadius:2 }], false);
+  }
+
+  // ── Steps (bar) ──
+  if (settings.steps !== false)
+    makeBarChart('chart-steps', labels, [{ label:'Steps', data:data.map(d=>d.steps), backgroundColor:'#4a8c72cc', borderWidth:0, borderRadius:2 }], false);
+
+  // ── Sleep ──
+  if (settings.sleep !== false) {
+    let sleepRec = '';
+    if (p.age) {
+      const hrs = p.age < 13 ? 10 : p.age < 18 ? 9 : p.age < 65 ? 8 : 7;
+      sleepRec = `Recommended: <strong>${hrs} hrs/night</strong> for your age group.`;
+    }
+    const recSlEl = document.getElementById('rec-sleep');
+    if (recSlEl) recSlEl.innerHTML = sleepRec;
+    makeBarChart('chart-sleep', labels, [{ label:'Sleep (hrs)', data:data.map(d=>d.sleep), backgroundColor:'#9b7fd4cc', borderWidth:0, borderRadius:2 }], false);
+  }
+
+  // ── Exercise Heatmap ──
+  if (settings['ex-heatmap'] !== false) renderExerciseHeatmap();
+
+  // ── Habit Heatmap ──
+  if (settings['habit-heatmap'] !== false) renderHabitHeatmap();
+}
+
+// ── Heatmaps ──────────────────────────────────────────────
+function getHeatmapDates() {
+  const dates = getDatesInRange();
+  return dates.slice(-84); // cap at 84 days (12 weeks) for readability
+}
+
+function renderExerciseHeatmap() {
+  const el = document.getElementById('heatmap-exercise');
+  if (!el) return;
+  const dates = getHeatmapDates();
+  const activeList = getActiveExList();
+  const lib = getExLib();
+
+  let score = 0, possible = 0;
+  const cells = dates.map(ds => {
+    const data  = getDayData(ds);
+    const exDay = data.exercises || {};
+    const applicable = activeList.filter(entry => recurrenceAppliesOnDate(entry.recurrence, ds) && !exEntryHasEnded(entry, ds));
+    if (applicable.length === 0) return `<span class="hm-cell hm-none" title="${ds}"></span>`;
+    possible++;
+    let allMet = true, anyDone = false;
+    applicable.forEach(entry => {
+      const ex = lib.find(e => e.id === entry.id);
+      if (!ex) return;
+      const sets = (exDay[ex.id] || {}).sets || [];
+      const total = sets.reduce((a,b)=>a+b,0);
+      if (total > 0) anyDone = true;
+      if (ex.goal > 0 && total < ex.goal) allMet = false;
+      if (ex.goal === 0 && total === 0) allMet = false;
+    });
+    if (allMet && anyDone) { score += 1; return `<span class="hm-cell hm-done" title="${ds}"></span>`; }
+    if (anyDone) { score += 0.5; return `<span class="hm-cell hm-partial" title="${ds}"></span>`; }
+    score += 0;
+    return `<span class="hm-cell hm-fail" title="${ds}"></span>`;
+  }).join('');
+
+  el.innerHTML = cells;
+  const rateEl = document.getElementById('heatmap-ex-rate');
+  if (rateEl && possible > 0) {
+    const pct = Math.round((score / possible) * 100);
+    rateEl.textContent = `Accomplishment rate: ${pct}% (${Math.round(score)} / ${possible} scheduled days)`;
+  }
+}
+
+function renderHabitHeatmap() {
+  const el = document.getElementById('heatmap-habit');
+  if (!el) return;
+  const dates = getHeatmapDates();
+  const items  = getCLItems();
+
+  let score = 0, possible = 0;
+  const cells = dates.map(ds => {
+    const data   = getDayData(ds);
+    const checks = data.checklist || {};
+    const applicable = items.filter(item => recurrenceAppliesOnDate(item.recurrence, ds) && !clItemHasEnded(item, ds));
+    if (applicable.length === 0) return `<span class="hm-cell hm-none" title="${ds}"></span>`;
+    possible++;
+    let totalBoxes = 0, checkedBoxes = 0;
+    applicable.forEach(item => {
+      totalBoxes   += item.count;
+      checkedBoxes += Math.min(checks[item.id] || 0, item.count);
+    });
+    if (checkedBoxes === 0) { return `<span class="hm-cell hm-fail hm-fail-x" title="${ds}">✕</span>`; }
+    if (checkedBoxes >= totalBoxes) { score += 1; return `<span class="hm-cell hm-done" title="${ds}"></span>`; }
+    score += 0.5;
+    return `<span class="hm-cell hm-habit-partial" title="${ds}"></span>`;
+  }).join('');
+
+  el.innerHTML = cells;
+  const rateEl = document.getElementById('heatmap-habit-rate');
+  if (rateEl && possible > 0) {
+    const pct = Math.round((score / possible) * 100);
+    rateEl.textContent = `Accomplishment rate: ${pct}% (${Math.round(score)} / ${possible} habit days)`;
+  }
 }
 
 // ─── EXPORT CSV ──────────────────────────────────────────
@@ -1232,12 +1578,16 @@ function loadCardToggles() {
 
 function updateExtrasChartsVisibility() {
   const show = getCardEnabled('extras');
-  ['water','steps','sleep'].forEach(name => {
-    const el = document.getElementById('profile-chart-' + name);
+  // In the unified trends card, extras sections are shown/hidden individually
+  ['cs-water','cs-steps','cs-sleep','cs-weight'].forEach(id => {
+    const el = document.getElementById(id);
     if (el) el.style.display = show ? '' : 'none';
   });
-  const wt = document.getElementById('profile-chart-weight');
-  if (wt) wt.style.display = show ? '' : 'none';
+  // Also disable/enable their checkboxes in chart settings
+  ['water','steps','sleep','weight'].forEach(k => {
+    const el = document.getElementById('cs-toggle-' + k);
+    if (el) el.disabled = !show;
+  });
 }
 
 // ─── ASK AI FOR EXERCISE SUGGESTIONS ────────────────────
@@ -1801,15 +2151,12 @@ function renderChecklistCard() {
     else if (cr.type === 'weekly' && cr.days && cr.days.length < 7)
       dayTags = cr.days.sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
     const boxes = Array.from({ length: item.count }, (_, i) =>
-      `<button class="cl-box${i < checked ? ' checked' : ''}" data-item-id="${item.id}" data-box-index="${i}">${i < checked ? '✓' : ''}</button>`
+      `<span class="cl-box${i < checked ? ' checked' : ''}" data-item-id="${item.id}" data-box-index="${i}" role="checkbox">${i < checked ? '✓' : ''}</span>`
     ).join('');
     return `
     <div class="cl-item" data-item-id="${item.id}">
       <div class="cl-item-content">
-        <div>
-          <span class="cl-name">${item.name}</span>
-          ${dayTags ? `<span class="ex-day-tags" style="margin-left:6px;">${dayTags}</span>` : ''}
-        </div>
+        <span class="cl-name">${item.name}</span>
         <div class="cl-boxes">${boxes}</div>
       </div>
       <button class="btn-cl-edit" data-item-id="${item.id}">Edit</button>

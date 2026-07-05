@@ -410,14 +410,16 @@ button:active { transform: scale(0.97); }
 /* ─── MODALS ─── */
 #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
 #add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay,
-#foodcat-overlay, #editcooldown-overlay {
+#foodcat-overlay, #editcooldown-overlay,
+#fasting-settings-overlay, #foodmod-settings-overlay, #chart-settings-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center;
   padding: 16px; z-index: 100; backdrop-filter: blur(6px);
 }
 #modal-overlay.hidden, #log-modal-overlay.hidden, #edit-meal-overlay.hidden, #cal-overlay.hidden, #tutorial-overlay.hidden,
 #add-ex-overlay.hidden, #edit-ex-overlay.hidden, #add-cl-overlay.hidden, #edit-cl-overlay.hidden,
-#foodcat-overlay.hidden, #editcooldown-overlay.hidden { display: none; }
+#foodcat-overlay.hidden, #editcooldown-overlay.hidden,
+#fasting-settings-overlay.hidden, #foodmod-settings-overlay.hidden, #chart-settings-overlay.hidden { display: none; }
 
 .modal {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
@@ -604,7 +606,8 @@ footer {
   /* Modals — slide up from bottom on mobile */
   #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
   #add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay,
-  #foodcat-overlay, #editcooldown-overlay {
+  #foodcat-overlay, #editcooldown-overlay,
+  #fasting-settings-overlay, #foodmod-settings-overlay, #chart-settings-overlay {
     align-items: flex-end;
     padding: 0;
   }
@@ -740,7 +743,7 @@ footer {
 .cl-item-content { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; flex-wrap: wrap; }
 .cl-name { font-size: 14px; font-weight: 500; color: var(--text); }
 .cl-boxes { display: flex; gap: 6px; flex-wrap: wrap; }
-.cl-box { width: 30px; height: 30px; border-radius: 7px; border: 2px solid var(--input-border); background: var(--bg); color: transparent; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: none; padding: 0; transition: all 0.12s; flex-shrink: 0; cursor: pointer; }
+.cl-box { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 2px solid var(--input-border); background: var(--bg); color: transparent; font-size: 14px; font-weight: 700; line-height: 1; flex-shrink: 0; cursor: pointer; transition: all 0.12s; user-select: none; }
 .cl-box.checked { background: var(--border); border-color: var(--border); color: #fff; }
 .cl-box:hover { border-color: var(--border); opacity: 1; box-shadow: none; }
 .btn-cl-edit { flex-shrink: 0; background: none; color: var(--text-dim); border: 1px solid var(--input-border); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 500; box-shadow: none; }
@@ -895,3 +898,52 @@ footer {
   user-select: none;
 }
 .foodcat-chip .chip-remove:hover { background: rgba(255,255,255,0.45); }
+
+/* ─── TRENDS & STATISTICS ─── */
+.trends-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.trends-header h2 { margin-bottom: 0; flex-shrink: 0; }
+.trends-tab-row { display: flex; align-items: center; gap: 6px; }
+.trends-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.chart-period-tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 8px; padding: 3px; border: 1px solid var(--input-border); }
+.period-tab { background: transparent; color: var(--text-mid); border: none; border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; box-shadow: none; transition: background 0.12s, color 0.12s; }
+.period-tab.active { background: var(--border); color: #fff; }
+.period-tab:hover:not(.active):not(:disabled) { background: var(--accent-dim); color: var(--text); opacity: 1; box-shadow: none; }
+.period-tab:disabled { opacity: 0.35; cursor: not-allowed; }
+.chart-custom-range { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.chart-custom-range input[type="date"] { padding: 5px 8px; border: 1px solid var(--input-border); border-radius: 7px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; font-size: 12px; }
+.btn-chart-apply { background: var(--border); color: #fff; border: none; border-radius: 7px; padding: 5px 12px; font-size: 12px; font-weight: 600; box-shadow: none; }
+.btn-chart-apply:hover { opacity: 0.85; box-shadow: none; }
+.btn-chart-settings { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 8px; padding: 5px 10px; font-size: 14px; box-shadow: none; align-self: flex-end; }
+.btn-chart-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.btn-card-settings { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 3px 8px; font-size: 13px; box-shadow: none; line-height: 1.4; }
+.btn-card-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.chart-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
+.chart-filter-select { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--surface); color: var(--text-mid); font-family: 'Ubuntu', sans-serif; }
+.macro-view-toggle { display: flex; gap: 3px; }
+.mvt-btn { background: var(--bg); color: var(--text-dim); border: 1px solid var(--input-border); border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; box-shadow: none; }
+.mvt-btn.active { background: var(--border); color: #fff; border-color: var(--border); }
+.mvt-btn:hover:not(.active) { background: var(--accent-dim); color: var(--text); opacity: 1; box-shadow: none; }
+.chart-rec { font-size: 12px; color: var(--text-dim); margin: 0 0 8px; line-height: 1.5; }
+.chart-rec strong { color: var(--text); }
+
+/* ─── HEATMAPS ─── */
+.heatmap-legend { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; font-size: 11px; color: var(--text-dim); }
+.hm-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid var(--input-border); flex-shrink: 0; }
+.hm-swatch.hm-none { background: transparent; }
+.hm-swatch.hm-partial { background: var(--border); opacity: 0.4; }
+.hm-swatch.hm-done { background: #2e7d52; border-color: #2e7d52; }
+.hm-swatch.hm-fail { background: var(--danger); border-color: var(--danger); }
+.heatmap-grid { display: flex; flex-wrap: wrap; gap: 3px; }
+.hm-cell { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid var(--input-border); font-size: 8px; font-weight: 700; cursor: default; }
+.hm-cell.hm-none { background: transparent; }
+.hm-cell.hm-done { background: #2e7d52; border-color: #2e7d52; }
+.hm-cell.hm-partial { background: var(--border); opacity: 0.45; }
+.hm-cell.hm-habit-partial { background: #a8d5ba; border-color: #6aab8a; }
+.hm-cell.hm-fail { background: var(--danger); border-color: var(--danger); color: #fff; }
+.hm-cell.hm-fail-x { font-size: 7px; }
+.heatmap-rate { font-size: 12px; color: var(--text-dim); margin-top: 8px; font-weight: 500; }
+
+/* ─── CHART SETTINGS MODAL ─── */
+.chart-settings-list { display: flex; flex-direction: column; gap: 10px; }
+.chart-setting-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); cursor: pointer; }
+.chart-setting-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--border); cursor: pointer; flex-shrink: 0; }
