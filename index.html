@@ -255,7 +255,7 @@
         <div class="collapsible-header" onclick="toggleCardCollapse('fasting')">
           <h2>Fasting</h2>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button class="btn-card-settings" onclick="event.stopPropagation();openFastingSettings()" title="Fasting Settings">⚙</button>
+            <span class="btn-card-settings" onclick="event.stopPropagation();openFastingSettings()" title="Fasting Settings" role="button">⚙</span>
             <span class="collapse-chevron" id="chevron-fasting">▲</span>
           </div>
         </div>
@@ -270,7 +270,7 @@
         <div class="collapsible-header" onclick="toggleCardCollapse('foodmod')">
           <h2>Food Moderator</h2>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button class="btn-card-settings" onclick="event.stopPropagation();openFoodModSettings()" title="Cooldown Settings">⚙</button>
+            <span class="btn-card-settings" onclick="event.stopPropagation();openFoodModSettings()" title="Cooldown Settings" role="button">⚙</span>
             <span class="collapse-chevron" id="chevron-foodmod">▲</span>
           </div>
         </div>
@@ -438,7 +438,7 @@
         </div>
 
         <!-- Calories Burnt -->
-        <div class="chart-section" id="cs-burnt">
+        <div class="chart-section" id="cs-burnt" style="display:none;">
           <div class="chart-title-row">
             <span class="chart-title">Calories Burnt</span>
             <select class="chart-filter-select" id="burnt-filter" onchange="renderCharts()">
@@ -459,27 +459,27 @@
         </div>
 
         <!-- Water -->
-        <div class="chart-section" id="cs-water">
+        <div class="chart-section" id="cs-water" style="display:none;">
           <div class="chart-title">Water (ml)</div>
           <p class="chart-rec" id="rec-water"></p>
           <div class="chart-wrap"><canvas id="chart-water"></canvas></div>
         </div>
 
         <!-- Steps -->
-        <div class="chart-section" id="cs-steps">
+        <div class="chart-section" id="cs-steps" style="display:none;">
           <div class="chart-title">Steps</div>
           <div class="chart-wrap"><canvas id="chart-steps"></canvas></div>
         </div>
 
         <!-- Sleep -->
-        <div class="chart-section" id="cs-sleep">
+        <div class="chart-section" id="cs-sleep" style="display:none;">
           <div class="chart-title">Sleep (hrs)</div>
           <p class="chart-rec" id="rec-sleep"></p>
           <div class="chart-wrap"><canvas id="chart-sleep"></canvas></div>
         </div>
 
         <!-- Exercise Heatmap -->
-        <div class="chart-section" id="cs-ex-heatmap">
+        <div class="chart-section" id="cs-ex-heatmap" style="display:none;">
           <div class="chart-title">Exercise Heatmap</div>
           <div class="heatmap-legend">
             <span class="hm-swatch hm-none"></span><span>No exercise</span>
@@ -491,7 +491,7 @@
         </div>
 
         <!-- Habit Heatmap -->
-        <div class="chart-section" id="cs-habit-heatmap">
+        <div class="chart-section" id="cs-habit-heatmap" style="display:none;">
           <div class="chart-title">Habit Tracker Heatmap</div>
           <div class="heatmap-legend">
             <span class="hm-swatch hm-none"></span><span>No habits</span>
@@ -1158,7 +1158,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v3.0</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v2.4</p>
   </footer>
 
 <style>

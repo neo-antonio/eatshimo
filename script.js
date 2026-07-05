@@ -601,9 +601,16 @@ let charts = {};
 
 // Chart visibility settings (all on by default)
 const CHART_DEFAULTS = { macros:true, burnt:false, weight:true, water:false, steps:false, sleep:false, 'ex-heatmap':false, 'habit-heatmap':false };
+const CHART_SETTINGS_VERSION = 2;
 function getChartSettings() {
   const stored = JSON.parse(localStorage.getItem('eatshimo_chart_settings') || 'null');
-  return stored || { ...CHART_DEFAULTS };
+  // Reset if no version or old version (before we defaulted water/steps/sleep to false)
+  if (!stored || stored._v !== CHART_SETTINGS_VERSION) {
+    const fresh = { ...CHART_DEFAULTS, _v: CHART_SETTINGS_VERSION };
+    localStorage.setItem('eatshimo_chart_settings', JSON.stringify(fresh));
+    return fresh;
+  }
+  return stored;
 }
 function saveChartSettings() {
   const keys = ['macros','burnt','weight','water','steps','sleep','ex-heatmap','habit-heatmap'];

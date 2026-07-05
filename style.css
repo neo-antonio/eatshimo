@@ -915,8 +915,8 @@ footer {
 .btn-chart-apply:hover { opacity: 0.85; box-shadow: none; }
 .btn-chart-settings { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 8px; padding: 5px 10px; font-size: 14px; box-shadow: none; align-self: flex-end; }
 .btn-chart-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
-.btn-card-settings { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 3px 8px; font-size: 13px; box-shadow: none; line-height: 1.4; }
-.btn-card-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.btn-card-settings { display: inline-flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 3px 8px; font-size: 13px; line-height: 1; cursor: pointer; user-select: none; }
+.btn-card-settings:hover { background: var(--border); color: #fff; }
 .chart-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
 .chart-filter-select { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--surface); color: var(--text-mid); font-family: 'Ubuntu', sans-serif; }
 .macro-view-toggle { display: flex; gap: 3px; }
