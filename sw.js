@@ -1,6 +1,6 @@
 HEAD
 // ─── SERVICE WORKER — Eatshimo ────────────────────────────
-const CACHE_NAME = 'eatshimo-v3.02';
+const CACHE_NAME = 'eatshimo-v3.03';
 
 // Files to pre-cache on install (all core app assets)
 const PRECACHE_URLS = [
