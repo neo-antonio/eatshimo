@@ -6,6 +6,18 @@ The goal of Eatshimo is simple: provide a straightforward calorie tracking exper
 
 ## Features
 
+* Record meals with grams, calories, macros, and fiber
+* Auto adjust values based on grams or set manually without affecting food library
+* Record daily water, steps, weight, and sleep
+* Record daily, weekly, monthly, or custom exercises and habits
+* Fasting timer with customizable hours and duration
+* Food moderator helps you tag food and creates a cooldown duration before you can eat the food again
+* Get suggested calories, set targets, and adjust timezone in settings in your profile
+* See simple statistics from daily, weekly, monthly, or custom dates
+* Export, import, or delete all local data with ease
+
+## Other Features
+
 * Free and open source (MIT License)
 * Works offline
 * No account required
