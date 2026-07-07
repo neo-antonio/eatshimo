@@ -614,7 +614,7 @@ function getChartSettings() {
 }
 function saveChartSettings() {
   const keys = ['macros','burnt','weight','water','steps','sleep','ex-heatmap','habit-heatmap'];
-  const settings = {};
+  const settings = { _v: CHART_SETTINGS_VERSION };
   keys.forEach(k => {
     const el = document.getElementById('cs-toggle-' + k);
     settings[k] = el ? el.checked : true;
@@ -632,7 +632,7 @@ function applyChartVisibility(settings) {
 }
 function loadChartSettingsUI() {
   const settings = getChartSettings();
-  Object.keys(settings).forEach(k => {
+  Object.keys(settings).filter(k => k !== '_v').forEach(k => {
     const el = document.getElementById('cs-toggle-' + k);
     if (el) el.checked = settings[k] !== false;
   });
@@ -1585,15 +1585,14 @@ function loadCardToggles() {
 
 function updateExtrasChartsVisibility() {
   const show = getCardEnabled('extras');
-  // In the unified trends card, extras sections are shown/hidden individually
-  ['cs-water','cs-steps','cs-sleep','cs-weight'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = show ? '' : 'none';
-  });
-  // Also disable/enable their checkboxes in chart settings
+  const chartSettings = getChartSettings();
+  // Only show extras chart sections if both: extras card is enabled AND chart setting is on
   ['water','steps','sleep','weight'].forEach(k => {
-    const el = document.getElementById('cs-toggle-' + k);
-    if (el) el.disabled = !show;
+    const el = document.getElementById('cs-' + k);
+    if (el) el.style.display = (show && chartSettings[k] !== false) ? '' : 'none';
+    // Disable the toggle checkbox if extras card is off
+    const cb = document.getElementById('cs-toggle-' + k);
+    if (cb) cb.disabled = !show;
   });
 }
 
