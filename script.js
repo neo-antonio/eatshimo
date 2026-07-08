@@ -853,7 +853,37 @@ function makePieChart(id, labels, values, colors) {
   destroyChart(id);
   const ctx = document.getElementById(id);
   if (!ctx) return;
-  const opts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true,position:'bottom',labels:{font:{size:11,family:'Ubuntu'},color:'var(--text-dim)',boxWidth:12}}, tooltip:{backgroundColor:'#23272f',titleColor:'#f0f1f4',bodyColor:'#9aa0b4'} } };
+  const total = values.reduce((a, b) => a + b, 0);
+  const opts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { font:{size:11,family:'Ubuntu'}, color:'var(--text-dim)', boxWidth:12,
+          generateLabels: chart => {
+            const data = chart.data;
+            return data.labels.map((label, i) => {
+              const val = data.datasets[0].data[i];
+              const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+              return { text: `${label} ${pct}%`, fillStyle: colors[i], strokeStyle: colors[i], lineWidth: 0, index: i };
+            });
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor:'#23272f', titleColor:'#f0f1f4', bodyColor:'#9aa0b4',
+        callbacks: {
+          label: ctx => {
+            const val = ctx.parsed;
+            const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+            return ` ${ctx.label}: ${val}g (${pct}%)`;
+          }
+        }
+      }
+    }
+  };
   charts[id] = new Chart(ctx, { type:'pie', data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2 }] }, options:opts });
 }
 
@@ -2748,6 +2778,10 @@ function exportCardsData() {
     if (v !== null) { try { data[k] = JSON.parse(v); } catch(e) { data[k] = v; } }
   });
   _downloadJSON(data, 'eatshimo_cards.json');
+}
+
+function exportFoodLibrary() {
+  _downloadJSON({ eatshimo_foods: JSON.parse(localStorage.getItem('eatshimo_foods') || '[]') }, 'eatshimo_food_library.json');
 }
 
 function _downloadJSON(obj, filename) {

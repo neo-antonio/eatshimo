@@ -408,7 +408,7 @@
                 <button class="period-tab" data-period="monthly">Monthly</button>
                 <button class="period-tab" data-period="custom">Custom</button>
               </div>
-              <button class="btn-chart-settings" onclick="openChartSettings()" title="Chart Settings">⚙</button>
+              <button class="btn-chart-settings period-tab" onclick="openChartSettings()" title="Chart Settings">⚙</button>
             </div>
             <div id="chart-custom-range" style="display:none;" class="chart-custom-range">
               <input type="date" id="chart-date-from" />
@@ -429,7 +429,7 @@
         <div class="chart-section" id="cs-macros">
           <div class="chart-title-row">
             <span class="chart-title">Macros</span>
-            <div class="macro-view-toggle">
+            <div class="macro-view-toggle" style="gap:6px;">
               <button class="mvt-btn active" id="mvt-stack" onclick="setMacroView('stack')">Stacked</button>
               <button class="mvt-btn" id="mvt-pie" onclick="setMacroView('pie')">Pie</button>
             </div>
@@ -513,7 +513,7 @@
           <input type="file" id="json-import" accept=".json" style="display:none;" onchange="importData(event)" />
         </div>
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Export only the four health cards (exercises, habits, fasting, food moderator) as a separate file.</p>
-        <button onclick="exportCardsData()" class="btn-secondary" style="width:100%;">Export Cards Only</button>
+        <button onclick="exportFoodLibrary()" class="btn-secondary" style="width:100%;margin-top:8px;">Export Food Library Only</button>
         <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--text-dim);"></div>
       </section>
 
@@ -1158,7 +1158,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v3.1</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v3.2</p>
   </footer>
 
 <style>

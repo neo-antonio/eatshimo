@@ -913,8 +913,8 @@ footer {
 .chart-custom-range input[type="date"] { padding: 5px 8px; border: 1px solid var(--input-border); border-radius: 7px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; font-size: 12px; }
 .btn-chart-apply { background: var(--border); color: #fff; border: none; border-radius: 7px; padding: 5px 12px; font-size: 12px; font-weight: 600; box-shadow: none; }
 .btn-chart-apply:hover { opacity: 0.85; box-shadow: none; }
-.btn-chart-settings { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 8px; padding: 5px 10px; font-size: 14px; box-shadow: none; align-self: flex-end; }
-.btn-chart-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.btn-chart-settings { background: var(--accent-dim) !important; color: var(--text-mid) !important; border-color: var(--input-border) !important; }
+.btn-chart-settings:hover { background: var(--border) !important; color: #fff !important; }
 .btn-card-settings { display: inline-flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 3px 8px; font-size: 13px; line-height: 1; cursor: pointer; user-select: none; }
 .btn-card-settings:hover { background: var(--border); color: #fff; }
 .chart-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
