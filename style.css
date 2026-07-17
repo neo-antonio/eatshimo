@@ -409,7 +409,7 @@ button:active { transform: scale(0.97); }
 
 /* ─── MODALS ─── */
 #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
-#add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay,
+#add-ex-overlay, #edit-ex-overlay,
 #foodcat-overlay, #editcooldown-overlay,
 #fasting-settings-overlay, #foodmod-settings-overlay, #chart-settings-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -417,7 +417,7 @@ button:active { transform: scale(0.97); }
   padding: 16px; z-index: 100; backdrop-filter: blur(6px);
 }
 #modal-overlay.hidden, #log-modal-overlay.hidden, #edit-meal-overlay.hidden, #cal-overlay.hidden, #tutorial-overlay.hidden,
-#add-ex-overlay.hidden, #edit-ex-overlay.hidden, #add-cl-overlay.hidden, #edit-cl-overlay.hidden,
+#add-ex-overlay.hidden, #edit-ex-overlay.hidden,
 #foodcat-overlay.hidden, #editcooldown-overlay.hidden,
 #fasting-settings-overlay.hidden, #foodmod-settings-overlay.hidden, #chart-settings-overlay.hidden { display: none; }
 
@@ -605,7 +605,7 @@ footer {
 
   /* Modals — slide up from bottom on mobile */
   #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
-  #add-ex-overlay, #edit-ex-overlay, #add-cl-overlay, #edit-cl-overlay,
+  #add-ex-overlay, #edit-ex-overlay,
   #foodcat-overlay, #editcooldown-overlay,
   #fasting-settings-overlay, #foodmod-settings-overlay, #chart-settings-overlay {
     align-items: flex-end;
@@ -737,17 +737,6 @@ footer {
 /* Add exercise modal chips */
 /* (legacy ex-preset-btn / ex-active-btn rules removed — presets no longer used) */
 
-/* ─── HEALTH ROUTINES CHECKLIST ─── */
-.cl-item { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--input-border); gap: 10px; }
-.cl-item:last-child { border-bottom: none; }
-.cl-item-content { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; flex-wrap: wrap; }
-.cl-name { font-size: 14px; font-weight: 500; color: var(--text); }
-.cl-boxes { display: flex; gap: 6px; flex-wrap: wrap; }
-.cl-box { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 2px solid var(--input-border); background: var(--bg); color: transparent; font-size: 14px; font-weight: 700; line-height: 1; flex-shrink: 0; cursor: pointer; transition: all 0.12s; user-select: none; }
-.cl-box.checked { background: var(--border); border-color: var(--border); color: #fff; }
-.cl-box:hover { border-color: var(--border); opacity: 1; box-shadow: none; }
-.btn-cl-edit { flex-shrink: 0; background: none; color: var(--text-dim); border: 1px solid var(--input-border); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 500; box-shadow: none; }
-.btn-cl-edit:hover { background: var(--accent-dim); color: var(--text); opacity: 1; box-shadow: none; }
 
 /* ─── TOGGLE SWITCH (Profile) ─── */
 .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -903,7 +892,7 @@ footer {
 .trends-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .trends-header h2 { margin-bottom: 0; flex-shrink: 0; }
 .trends-tab-row { display: flex; align-items: center; gap: 6px; }
-.trends-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.trends-controls { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; flex-shrink: 0; }
 .chart-period-tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 8px; padding: 3px; border: 1px solid var(--input-border); }
 .period-tab { background: transparent; color: var(--text-mid); border: none; border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; box-shadow: none; transition: background 0.12s, color 0.12s; }
 .period-tab.active { background: var(--border); color: #fff; }
@@ -938,7 +927,6 @@ footer {
 .hm-cell.hm-none { background: transparent; }
 .hm-cell.hm-done { background: #2e7d52; border-color: #2e7d52; }
 .hm-cell.hm-partial { background: var(--border); opacity: 0.45; }
-.hm-cell.hm-habit-partial { background: #a8d5ba; border-color: #6aab8a; }
 .hm-cell.hm-fail { background: var(--danger); border-color: var(--danger); color: #fff; }
 .hm-cell.hm-fail-x { font-size: 7px; }
 .heatmap-rate { font-size: 12px; color: var(--text-dim); margin-top: 8px; font-weight: 500; }

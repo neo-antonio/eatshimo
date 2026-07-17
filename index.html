@@ -238,18 +238,6 @@
         </div>
       </section>
 
-      <!-- HABIT TRACKER -->
-      <section class="card collapsible-card" id="card-checklist">
-        <div class="collapsible-header" onclick="toggleCardCollapse('checklist')">
-          <h2>Habit Tracker</h2>
-          <span class="collapse-chevron" id="chevron-checklist">▲</span>
-        </div>
-        <div class="collapsible-body" id="body-checklist">
-          <div id="checklist-list"></div>
-          <button class="btn-add-card-item" onclick="openAddCLModal()">+ Add Habit</button>
-        </div>
-      </section>
-
       <!-- FASTING TRACKER -->
       <section class="card collapsible-card" id="card-fasting">
         <div class="collapsible-header" onclick="toggleCardCollapse('fasting')">
@@ -370,30 +358,35 @@
         <button onclick="saveProfile()">Save Profile</button>
       </section>
 
-      <section class="card" id="tdee-card" style="display:none;">
-        <h2>Calorie Targets</h2>
-        <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Based on your profile using the Mifflin-St Jeor equation.</p>
-        <div class="tdee-grid">
-          <div class="tdee-box tdee-loss">
-            <div class="tdee-label">Weight Loss</div>
-            <div class="tdee-val" id="tdee-loss">—</div>
-            <div class="tdee-sub">kcal/day (−500)</div>
-            <button class="btn-tdee-set" onclick="setTDEEGoal('loss')">Set as Goal</button>
-          </div>
-          <div class="tdee-box tdee-maintain">
-            <div class="tdee-label">Maintain</div>
-            <div class="tdee-val" id="tdee-maintain">—</div>
-            <div class="tdee-sub">kcal/day (TDEE)</div>
-            <button class="btn-tdee-set" onclick="setTDEEGoal('maintain')">Set as Goal</button>
-          </div>
-          <div class="tdee-box tdee-gain">
-            <div class="tdee-label">Weight Gain</div>
-            <div class="tdee-val" id="tdee-gain">—</div>
-            <div class="tdee-sub">kcal/day (+500)</div>
-            <button class="btn-tdee-set" onclick="setTDEEGoal('gain')">Set as Goal</button>
-          </div>
+      <section class="card collapsible-card" id="tdee-card" style="display:none;">
+        <div class="collapsible-header" onclick="toggleCardCollapse('tdee')">
+          <h2>Calorie Targets</h2>
+          <span class="collapse-chevron" id="chevron-tdee">▼</span>
         </div>
-        <div class="tdee-current" id="tdee-current-goal"></div>
+        <div class="collapsible-body" id="body-tdee" style="display:none;">
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Based on your profile using the Mifflin-St Jeor equation.</p>
+          <div class="tdee-grid">
+            <div class="tdee-box tdee-loss">
+              <div class="tdee-label">Weight Loss</div>
+              <div class="tdee-val" id="tdee-loss">—</div>
+              <div class="tdee-sub">kcal/day (−500)</div>
+              <button class="btn-tdee-set" onclick="setTDEEGoal('loss')">Set as Goal</button>
+            </div>
+            <div class="tdee-box tdee-maintain">
+              <div class="tdee-label">Maintain</div>
+              <div class="tdee-val" id="tdee-maintain">—</div>
+              <div class="tdee-sub">kcal/day (TDEE)</div>
+              <button class="btn-tdee-set" onclick="setTDEEGoal('maintain')">Set as Goal</button>
+            </div>
+            <div class="tdee-box tdee-gain">
+              <div class="tdee-label">Weight Gain</div>
+              <div class="tdee-val" id="tdee-gain">—</div>
+              <div class="tdee-sub">kcal/day (+500)</div>
+              <button class="btn-tdee-set" onclick="setTDEEGoal('gain')">Set as Goal</button>
+            </div>
+          </div>
+          <div class="tdee-current" id="tdee-current-goal"></div>
+        </div>
       </section>
 
       <!-- TRENDS & STATS -->
@@ -490,18 +483,6 @@
           <div class="heatmap-rate" id="heatmap-ex-rate"></div>
         </div>
 
-        <!-- Habit Heatmap -->
-        <div class="chart-section" id="cs-habit-heatmap" style="display:none;">
-          <div class="chart-title">Habit Tracker Heatmap</div>
-          <div class="heatmap-legend">
-            <span class="hm-swatch hm-none"></span><span>No habits</span>
-            <span class="hm-swatch hm-partial"></span><span>Partial</span>
-            <span class="hm-swatch hm-done"></span><span>All done</span>
-            <span class="hm-swatch hm-fail"></span><span>Not met</span>
-          </div>
-          <div class="heatmap-grid" id="heatmap-habit"></div>
-          <div class="heatmap-rate" id="heatmap-habit-rate"></div>
-        </div>
       </section>
 
       <section class="card">
@@ -512,7 +493,7 @@
           <button class="btn-secondary" onclick="document.getElementById('json-import').click()" style="flex:1;min-width:130px;">Import JSON</button>
           <input type="file" id="json-import" accept=".json" style="display:none;" onchange="importData(event)" />
         </div>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Export only the four health cards (exercises, habits, fasting, food moderator) as a separate file.</p>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Export only the three health cards (exercises, fasting, food moderator) as a separate file.</p>
         <button onclick="exportFoodLibrary()" class="btn-secondary" style="width:100%;margin-top:8px;">Export Food Library Only</button>
         <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--text-dim);"></div>
       </section>
@@ -537,16 +518,6 @@
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-exercise" onchange="saveCardToggle('exercise',this)" />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <div class="toggle-label">Habit Tracker</div>
-              <div class="toggle-desc">Daily habit checklists for vitamins, skincare, etc.</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-checklist" onchange="saveCardToggle('checklist',this)" />
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -874,137 +845,6 @@
     </div>
   </div>
 
-  <!-- ADD HABIT MODAL -->
-  <div id="add-cl-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('add-cl-overlay').classList.add('hidden')">
-    <div class="modal">
-      <h2>Add Habit</h2>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">e.g. Vitamins, Skincare, Medication</p>
-      <div class="form-grid">
-        <div class="field full"><label>Habit Name</label><input type="text" id="new-cl-name" placeholder="e.g. Take Vitamins" /></div>
-        <div class="field full">
-          <label>Times per day (1–5 checkboxes)</label>
-          <input type="number" id="new-cl-count" min="1" max="5" value="1" />
-          <span style="font-size:11px;color:var(--text-dim);margin-top:4px;display:block;">Each occurrence gets its own checkbox.</span>
-        </div>
-      </div>
-      <div class="section-divider">Repeat Schedule</div>
-      <div class="rec-section">
-        <div class="field full" style="margin-top:10px;">
-          <select id="new-cl-recurrence" onchange="updateRecurrenceUI('new-cl')">
-            <option value="weekly">Weekly (specific days)</option>
-            <option value="once">This day only — no repeat</option>
-            <option value="every_x_weeks">Every N weeks</option>
-            <option value="every_x_months">Every N months (same date)</option>
-            <option value="every_x_years">Every N years (same date)</option>
-            <option value="every_x_days">Every N days</option>
-          </select>
-        </div>
-        <div class="rec-row" id="new-cl-days-row">
-          <label class="rec-label">Days of week</label>
-          <div class="day-picker" id="new-cl-days-picker">
-            <button class="day-btn active" data-day="1" onclick="toggleDayBtn(this)">M</button>
-            <button class="day-btn active" data-day="2" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn active" data-day="3" onclick="toggleDayBtn(this)">W</button>
-            <button class="day-btn active" data-day="4" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn active" data-day="5" onclick="toggleDayBtn(this)">F</button>
-            <button class="day-btn active" data-day="6" onclick="toggleDayBtn(this)">S</button>
-            <button class="day-btn active" data-day="0" onclick="toggleDayBtn(this)">S</button>
-          </div>
-        </div>
-        <div class="rec-row" id="new-cl-interval-row" style="display:none;">
-          <label class="rec-label">Repeat every</label>
-          <div class="interval-row">
-            <input type="number" id="new-cl-interval" min="1" value="2" class="interval-input" />
-            <span id="new-cl-interval-unit" class="interval-unit">weeks</span>
-          </div>
-        </div>
-  <div class="rec-row" id="new-cl-past-row">
-    <label class="ask-ai-check">
-      <input type="checkbox" id="new-cl-apply-past" />
-      Also apply to past dates
-    </label>
-  </div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" onclick="document.getElementById('add-cl-overlay').classList.add('hidden')">Cancel</button>
-        <button onclick="saveNewCL()">Add Habit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- EDIT CHECKLIST MODAL -->
-  <div id="edit-cl-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('edit-cl-overlay').classList.add('hidden')">
-    <div class="modal">
-      <h2>Edit Habit</h2>
-      <div class="form-grid">
-        <div class="field full"><label>Name</label><input type="text" id="edit-cl-name" /></div>
-        <div class="field full"><label>Times per day (1–5)</label><input type="number" id="edit-cl-count" min="1" max="5" /></div>
-      <div class="section-divider">Repeat Schedule</div>
-      <div class="rec-section">
-        <div class="field full" style="margin-top:10px;">
-          <select id="edit-cl-recurrence" onchange="updateRecurrenceUI('edit-cl')">
-            <option value="weekly">Weekly (specific days)</option>
-            <option value="once">This day only — no repeat</option>
-            <option value="every_x_weeks">Every N weeks</option>
-            <option value="every_x_months">Every N months (same date)</option>
-            <option value="every_x_years">Every N years (same date)</option>
-            <option value="every_x_days">Every N days</option>
-          </select>
-        </div>
-        <div class="rec-row" id="edit-cl-days-row">
-          <label class="rec-label">Days of week</label>
-          <div class="day-picker" id="edit-cl-days-picker">
-            <button class="day-btn " data-day="1" onclick="toggleDayBtn(this)">M</button>
-            <button class="day-btn " data-day="2" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn " data-day="3" onclick="toggleDayBtn(this)">W</button>
-            <button class="day-btn " data-day="4" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn " data-day="5" onclick="toggleDayBtn(this)">F</button>
-            <button class="day-btn " data-day="6" onclick="toggleDayBtn(this)">S</button>
-            <button class="day-btn " data-day="0" onclick="toggleDayBtn(this)">S</button>
-          </div>
-        </div>
-        <div class="rec-row" id="edit-cl-interval-row" style="display:none;">
-          <label class="rec-label">Repeat every</label>
-          <div class="interval-row">
-            <input type="number" id="edit-cl-interval" min="1" value="2" class="interval-input" />
-            <span id="edit-cl-interval-unit" class="interval-unit">weeks</span>
-          </div>
-        </div>
-        <div class="rec-row">
-          <label class="rec-label">End condition</label>
-          <select id="edit-cl-end-type" onchange="updateEndUI('edit-cl')">
-            <option value="never">Never ends</option>
-            <option value="date">On a specific date</option>
-            <option value="occurrences">After N scheduled occurrences</option>
-            <option value="accomplishments">After N completions</option>
-          </select>
-        </div>
-        <div class="rec-row" id="edit-cl-end-date-row" style="display:none;">
-          <label class="rec-label">End date</label>
-          <input type="date" id="edit-cl-end-date" />
-        </div>
-        <div class="rec-row" id="edit-cl-end-count-row" style="display:none;">
-          <label class="rec-label" id="edit-cl-end-count-label">After how many?</label>
-          <div class="interval-row"><input type="number" id="edit-cl-end-count" min="1" value="10" class="interval-input" /></div>
-        </div>
-      </div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-danger" onclick="showDeletePanel('cl')">Delete</button>
-        <button onclick="saveEditCL()">Save</button>
-      </div>
-      <div id="cl-delete-panel" class="delete-panel" style="display:none;">
-        <p class="delete-panel-title">Remove from which occurrences?</p>
-        <div class="delete-panel-btns">
-          <button class="btn-delete-opt" onclick="deleteCLItem('once')">This day only</button>
-          <button class="btn-delete-opt" onclick="deleteCLItem('future')">This &amp; future days</button>
-          <button class="btn-delete-opt btn-delete-all" onclick="deleteCLItem('all')">All occurrences</button>
-        </div>
-        <button class="btn-delete-cancel" onclick="hideDeletePanel('cl')">Cancel</button>
-      </div>
-    </div>
-  </div>
-
   <!-- FOOD CATEGORY MODAL -->
   <div id="foodcat-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('foodcat-overlay').classList.add('hidden')">
     <div class="modal">
@@ -1136,7 +976,6 @@
         <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-steps" onchange="saveChartSettings()" /> <span>Steps</span></label>
         <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-sleep" onchange="saveChartSettings()" /> <span>Sleep</span></label>
         <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-ex-heatmap" onchange="saveChartSettings()" /> <span>Exercise Heatmap</span></label>
-        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-habit-heatmap" onchange="saveChartSettings()" /> <span>Habit Heatmap</span></label>
       </div>
       <div class="modal-actions">
         <button onclick="document.getElementById('chart-settings-overlay').classList.add('hidden')">Done</button>

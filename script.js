@@ -227,13 +227,10 @@ function renderDailyLog() {
   // Card visibility
   const extrasEnabled   = getCardEnabled('extras');
   const exerciseEnabled = getCardEnabled('exercise');
-  const clEnabled       = getCardEnabled('checklist');
   document.getElementById('card-extras').style.display    = extrasEnabled   ? '' : 'none';
   document.getElementById('card-exercise').style.display  = exerciseEnabled ? '' : 'none';
-  document.getElementById('card-checklist').style.display = clEnabled       ? '' : 'none';
   if (extrasEnabled)   initCardCollapse('extras');
   if (exerciseEnabled) { initCardCollapse('exercise');  renderExerciseCard(); }
-  if (clEnabled)       { initCardCollapse('checklist'); renderChecklistCard(); }
   // Fasting card
   const fastingEnabled = getCardEnabled('fasting');
   const foodmodEnabled = getCardEnabled('foodmod');
@@ -576,6 +573,7 @@ function calcTDEE(p) {
   document.getElementById('tdee-maintain').textContent = tdee;
   document.getElementById('tdee-gain').textContent     = tdee + 500;
   document.getElementById('tdee-card').style.display   = 'block';
+  initCardCollapse('tdee');
   const current = localStorage.getItem('eatshimo_cal_target');
   document.getElementById('tdee-current-goal').textContent = current ? `Your current goal: ${current} kcal/day` : 'No calorie goal set yet.';
 }
@@ -600,7 +598,7 @@ let macroView = 'stack';   // 'stack' | 'pie'
 let charts = {};
 
 // Chart visibility settings (all on by default)
-const CHART_DEFAULTS = { macros:true, burnt:false, weight:true, water:false, steps:false, sleep:false, 'ex-heatmap':false, 'habit-heatmap':false };
+const CHART_DEFAULTS = { macros:true, burnt:false, weight:true, water:false, steps:false, sleep:false, 'ex-heatmap':false };
 const CHART_SETTINGS_VERSION = 2;
 function getChartSettings() {
   const stored = JSON.parse(localStorage.getItem('eatshimo_chart_settings') || 'null');
@@ -613,7 +611,7 @@ function getChartSettings() {
   return stored;
 }
 function saveChartSettings() {
-  const keys = ['macros','burnt','weight','water','steps','sleep','ex-heatmap','habit-heatmap'];
+  const keys = ['macros','burnt','weight','water','steps','sleep','ex-heatmap'];
   const settings = { _v: CHART_SETTINGS_VERSION };
   keys.forEach(k => {
     const el = document.getElementById('cs-toggle-' + k);
@@ -624,7 +622,7 @@ function saveChartSettings() {
   renderCharts();
 }
 function applyChartVisibility(settings) {
-  const map = { macros:'cs-macros', burnt:'cs-burnt', weight:'cs-weight', water:'cs-water', steps:'cs-steps', sleep:'cs-sleep', 'ex-heatmap':'cs-ex-heatmap', 'habit-heatmap':'cs-habit-heatmap' };
+  const map = { macros:'cs-macros', burnt:'cs-burnt', weight:'cs-weight', water:'cs-water', steps:'cs-steps', sleep:'cs-sleep', 'ex-heatmap':'cs-ex-heatmap' };
   Object.entries(map).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = (settings[k] !== false) ? '' : 'none';
@@ -854,6 +852,28 @@ function makePieChart(id, labels, values, colors) {
   const ctx = document.getElementById(id);
   if (!ctx) return;
   const total = values.reduce((a, b) => a + b, 0);
+  const sliceLabelPlugin = {
+    id: 'sliceLabelPlugin_' + id,
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta || !meta.data) return;
+      ctx.save();
+      ctx.font = '600 11px Ubuntu';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      meta.data.forEach((arc, i) => {
+        const val = values[i];
+        if (!val || total <= 0) return;
+        const pct = Math.round((val / total) * 100);
+        if (pct < 5) return; // skip tiny slices to avoid clutter
+        const pos = arc.tooltipPosition();
+        ctx.fillText(`${pct}%`, pos.x, pos.y);
+      });
+      ctx.restore();
+    }
+  };
   const opts = {
     responsive: true,
     maintainAspectRatio: false,
@@ -884,7 +904,7 @@ function makePieChart(id, labels, values, colors) {
       }
     }
   };
-  charts[id] = new Chart(ctx, { type:'pie', data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2 }] }, options:opts });
+  charts[id] = new Chart(ctx, { type:'pie', data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2 }] }, options:opts, plugins:[sliceLabelPlugin] });
 }
 
 function getAccentColor() {
@@ -994,9 +1014,6 @@ function renderCharts() {
 
   // ── Exercise Heatmap ──
   if (settings['ex-heatmap'] !== false) renderExerciseHeatmap();
-
-  // ── Habit Heatmap ──
-  if (settings['habit-heatmap'] !== false) renderHabitHeatmap();
 }
 
 // ── Heatmaps ──────────────────────────────────────────────
@@ -1040,38 +1057,6 @@ function renderExerciseHeatmap() {
   if (rateEl && possible > 0) {
     const pct = Math.round((score / possible) * 100);
     rateEl.textContent = `Accomplishment rate: ${pct}% (${Math.round(score)} / ${possible} scheduled days)`;
-  }
-}
-
-function renderHabitHeatmap() {
-  const el = document.getElementById('heatmap-habit');
-  if (!el) return;
-  const dates = getHeatmapDates();
-  const items  = getCLItems();
-
-  let score = 0, possible = 0;
-  const cells = dates.map(ds => {
-    const data   = getDayData(ds);
-    const checks = data.checklist || {};
-    const applicable = items.filter(item => recurrenceAppliesOnDate(item.recurrence, ds) && !clItemHasEnded(item, ds));
-    if (applicable.length === 0) return `<span class="hm-cell hm-none" title="${ds}"></span>`;
-    possible++;
-    let totalBoxes = 0, checkedBoxes = 0;
-    applicable.forEach(item => {
-      totalBoxes   += item.count;
-      checkedBoxes += Math.min(checks[item.id] || 0, item.count);
-    });
-    if (checkedBoxes === 0) { return `<span class="hm-cell hm-fail hm-fail-x" title="${ds}">✕</span>`; }
-    if (checkedBoxes >= totalBoxes) { score += 1; return `<span class="hm-cell hm-done" title="${ds}"></span>`; }
-    score += 0.5;
-    return `<span class="hm-cell hm-habit-partial" title="${ds}"></span>`;
-  }).join('');
-
-  el.innerHTML = cells;
-  const rateEl = document.getElementById('heatmap-habit-rate');
-  if (rateEl && possible > 0) {
-    const pct = Math.round((score / possible) * 100);
-    rateEl.textContent = `Accomplishment rate: ${pct}% (${Math.round(score)} / ${possible} habit days)`;
   }
 }
 
@@ -1518,7 +1503,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModalDirect(); closeLogModalDirect(); closeCalendarDirect();
     closeEditMealModalDirect(); closeTutorialDirect();
-    ['add-ex-overlay','edit-ex-overlay','add-cl-overlay','edit-cl-overlay','foodcat-overlay','editcooldown-overlay']
+    ['add-ex-overlay','edit-ex-overlay','foodcat-overlay','editcooldown-overlay']
       .forEach(id => document.getElementById(id)?.classList.add('hidden'));
   }
   if (e.key === 'Enter' && e.target.closest('#add-section')) saveFood();
@@ -1606,7 +1591,7 @@ function saveCardToggle(name, checkbox) {
 }
 
 function loadCardToggles() {
-  ['extras','exercise','checklist','fasting','foodmod'].forEach(name => {
+  ['extras','exercise','fasting','foodmod'].forEach(name => {
     const el = document.getElementById('toggle-' + name);
     if (el) el.checked = getCardEnabled(name);
   });
@@ -2067,22 +2052,6 @@ function countExAccomplishments(exId, toDateString) {
   return count;
 }
 
-// Count habit completions (at least 1 checkbox ticked)
-function countCLAccomplishments(clId, toDateString) {
-  let count = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (!k || !k.startsWith('eatshimo_day_')) continue;
-    const ds = k.replace('eatshimo_day_', '');
-    if (ds >= toDateString) continue;
-    try {
-      const d = JSON.parse(localStorage.getItem(k));
-      if ((d?.checklist?.[clId] || 0) > 0) count++;
-    } catch(e) {}
-  }
-  return count;
-}
-
 function exEntryHasEnded(entry, dateString) {
   const rec = entry.recurrence || {};
   if (!rec.endType || rec.endType === 'never') return false;
@@ -2091,17 +2060,6 @@ function exEntryHasEnded(entry, dateString) {
     return rec.endAfterOccurrences ? countOccurrences(rec, dateString) >= rec.endAfterOccurrences : false;
   if (rec.endType === 'accomplishments')
     return rec.endAfterAccomplishments ? countExAccomplishments(entry.id, dateString) >= rec.endAfterAccomplishments : false;
-  return false;
-}
-
-function clItemHasEnded(item, dateString) {
-  const rec = item.recurrence || {};
-  if (!rec.endType || rec.endType === 'never') return false;
-  if (rec.endType === 'date') return rec.endDate ? dateString > rec.endDate : false;
-  if (rec.endType === 'occurrences')
-    return rec.endAfterOccurrences ? countOccurrences(rec, dateString) >= rec.endAfterOccurrences : false;
-  if (rec.endType === 'accomplishments')
-    return rec.endAfterAccomplishments ? countCLAccomplishments(item.id, dateString) >= rec.endAfterAccomplishments : false;
   return false;
 }
 
@@ -2135,162 +2093,6 @@ function deleteExFromTracker(mode) {
   document.getElementById('edit-ex-overlay').classList.add('hidden');
   hideDeletePanel('ex');
   renderExerciseCard();
-}
-
-// ─── HEALTH ROUTINES CHECKLIST ──────────────────────────
-function getCLItems() {
-  const raw = JSON.parse(localStorage.getItem('eatshimo_checklist') || '[]');
-  return raw.map(item => {
-    // Migrate old format (has days/activeSince but no recurrence)
-    if (item.days !== undefined && !item.recurrence)
-      return { ...item, recurrence: { type: 'weekly', days: item.days, activeSince: item.activeSince } };
-    if (!item.recurrence)
-      item.recurrence = { type: 'weekly', days: [0,1,2,3,4,5,6], activeSince: null };
-    return item;
-  });
-}
-function saveCLItems(items) { localStorage.setItem('eatshimo_checklist', JSON.stringify(items)); }
-
-function renderChecklistCard() {
-  const items = getCLItems();
-  const key = dateStr(currentDate);
-  const data = getDayData(key);
-  const checks = data.checklist || {};
-  const list = document.getElementById('checklist-list');
-  if (!list) return;
-
-  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dayOfWeek = new Date(key + 'T00:00:00').getDay();
-
-  const applicable = items.filter(item =>
-    recurrenceAppliesOnDate(item.recurrence, key) && !clItemHasEnded(item, key)
-  );
-
-  if (items.length === 0) {
-    list.innerHTML = '<p class="card-desc">Track daily habits like vitamins, skincare, or medication with checkboxes for each occurrence.</p>';
-    return;
-  }
-  if (applicable.length === 0) {
-    list.innerHTML = `<p class="empty-msg" style="padding:12px 0 4px;">No habits scheduled for ${DAY_NAMES[dayOfWeek]}.</p>`;
-    return;
-  }
-
-  list.innerHTML = applicable.map(item => {
-    const checked = checks[item.id] || 0;
-    const cr = item.recurrence || {};
-    let dayTags = '';
-    if (cr.type === 'once') dayTags = '<span class="ex-day-tag">Once</span>';
-    else if (cr.type === 'every_x_days')   dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}d</span>`;
-    else if (cr.type === 'every_x_weeks')  dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}w</span>`;
-    else if (cr.type === 'every_x_months') dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}mo</span>`;
-    else if (cr.type === 'every_x_years')  dayTags = `<span class="ex-day-tag">Every ${cr.interval||1}yr</span>`;
-    else if (cr.type === 'weekly' && cr.days && cr.days.length < 7)
-      dayTags = cr.days.sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
-    const boxes = Array.from({ length: item.count }, (_, i) =>
-      `<span class="cl-box${i < checked ? ' checked' : ''}" data-item-id="${item.id}" data-box-index="${i}" role="checkbox">${i < checked ? '✓' : ''}</span>`
-    ).join('');
-    return `
-    <div class="cl-item" data-item-id="${item.id}">
-      <div class="cl-item-content">
-        <span class="cl-name">${item.name}</span>
-        <div class="cl-boxes">${boxes}</div>
-      </div>
-      <button class="btn-cl-edit" data-item-id="${item.id}">Edit</button>
-    </div>`;
-  }).join('');
-
-  // Attach events via data attributes — avoids inline quote escaping issues
-  list.querySelectorAll('.cl-box').forEach(btn => {
-    btn.addEventListener('click', () => toggleCLBox(btn.dataset.itemId, parseInt(btn.dataset.boxIndex)));
-  });
-  list.querySelectorAll('.btn-cl-edit').forEach(btn => {
-    btn.addEventListener('click', () => openEditCLModal(btn.dataset.itemId));
-  });
-}
-
-function toggleCLBox(itemId, boxIndex) {
-  const key = dateStr(currentDate), data = getDayData(key);
-  const cur = data.checklist[itemId] || 0;
-  data.checklist[itemId] = cur === boxIndex + 1 ? boxIndex : boxIndex + 1;
-  saveDayData(key, data);
-  renderChecklistCard();
-}
-
-function openAddCLModal(defaultRec) {
-  document.getElementById('new-cl-name').value = '';
-  document.getElementById('new-cl-count').value = '1';
-  const type = defaultRec || 'weekly';
-  const sel = document.getElementById('new-cl-recurrence');
-  if (sel) sel.value = type;
-  setPickerDays('new-cl-days-picker', [0,1,2,3,4,5,6]);
-  const pastCb = document.getElementById('new-cl-apply-past');
-  if (pastCb) pastCb.checked = false;
-  updateRecurrenceUI('new-cl');
-  document.getElementById('add-cl-overlay').classList.remove('hidden');
-}
-
-function saveNewCL() {
-  const name = document.getElementById('new-cl-name').value.trim();
-  const count = Math.min(5, Math.max(1, parseInt(document.getElementById('new-cl-count').value) || 1));
-  if (!name) { alert('Please enter a routine name.'); return; }
-  const rec = getRecurrenceFromModal('new-cl');
-  const items = getCLItems();
-  items.push({ id: 'cl_' + Date.now(), name, count, recurrence: rec });
-  saveCLItems(items);
-  document.getElementById('add-cl-overlay').classList.add('hidden');
-  renderChecklistCard();
-}
-
-let editCLId = null;
-
-function openEditCLModal(itemId) {
-  editCLId = itemId;
-  const item = getCLItems().find(i => i.id === itemId);
-  if (!item) return;
-  document.getElementById('edit-cl-name').value = item.name;
-  document.getElementById('edit-cl-count').value = item.count;
-  setRecurrenceToModal('edit-cl', item.recurrence);
-  document.getElementById('edit-cl-overlay').classList.remove('hidden');
-}
-
-function saveEditCL() {
-  const items = getCLItems();
-  const idx = items.findIndex(i => i.id === editCLId);
-  if (idx === -1) return;
-  const name = document.getElementById('edit-cl-name').value.trim();
-  if (name) items[idx].name = name;
-  items[idx].count = Math.min(5, Math.max(1, parseInt(document.getElementById('edit-cl-count').value) || 1));
-  items[idx].recurrence = getRecurrenceFromModal('edit-cl');
-  saveCLItems(items);
-  document.getElementById('edit-cl-overlay').classList.add('hidden');
-  renderChecklistCard();
-}
-
-function deleteCLItem(mode) {
-  const today = dateStr(currentDate);
-  if (mode === 'all') {
-    saveCLItems(getCLItems().filter(i => i.id !== editCLId));
-  } else if (mode === 'once') {
-    const items = getCLItems();
-    const idx = items.findIndex(i => i.id === editCLId);
-    if (idx !== -1) {
-      if (!items[idx].recurrence) items[idx].recurrence = { type: 'weekly', days: [0,1,2,3,4,5,6] };
-      if (!items[idx].recurrence.exceptions) items[idx].recurrence.exceptions = [];
-      if (!items[idx].recurrence.exceptions.includes(today)) items[idx].recurrence.exceptions.push(today);
-      saveCLItems(items);
-    }
-  } else if (mode === 'future') {
-    const items = getCLItems();
-    const idx = items.findIndex(i => i.id === editCLId);
-    if (idx !== -1) {
-      if (!items[idx].recurrence) items[idx].recurrence = { type: 'weekly', days: [0,1,2,3,4,5,6] };
-      items[idx].recurrence.endDate = prevDateStr(today);
-      saveCLItems(items);
-    }
-  }
-  document.getElementById('edit-cl-overlay').classList.add('hidden');
-  hideDeletePanel('cl');
-  renderChecklistCard();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2754,7 +2556,7 @@ function clearOneCooldown() {
 // ─── JSON EXPORT / IMPORT ───────────────────────────────────
 // ════════════════════════════════════════════════════════════
 const ALL_CARD_KEYS = [
-  'eatshimo_ex_lib','eatshimo_active_ex','eatshimo_checklist',
+  'eatshimo_ex_lib','eatshimo_active_ex',
   'eatshimo_fasting','eatshimo_food_cats','eatshimo_food_tags',
   'eatshimo_cooldowns','eatshimo_cooldown_setting'
 ];
