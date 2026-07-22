@@ -768,7 +768,7 @@ function getChartData() {
       steps:    data.steps  || 0,
       sleep:    data.sleep  || null,
       stepCals, exCals, bmr,
-      netCals:  Math.max(0, consumed - stepCals - exCals - bmr),
+      netCals:  Math.round(consumed - stepCals - exCals - bmr),
     };
   });
 
@@ -963,7 +963,12 @@ function renderCharts() {
     } else if (filter === 'exercise') {
       bDatasets = [{ label:'Exercise', data:data.map(d=>d.exCals), backgroundColor:'#c0523acc', borderWidth:0, borderRadius:2 }];
     } else if (filter === 'net') {
-      bDatasets = [{ label:'Net (Consumed − Burnt)', data:data.map(d=>d.netCals), backgroundColor:accent+'cc', borderWidth:0, borderRadius:2 }];
+      bDatasets = [{
+        label: 'Net (Consumed − Burnt)',
+        data: data.map(d => d.netCals),
+        backgroundColor: data.map(d => d.netCals <= 0 ? '#4a8c72cc' : '#c0523acc'),
+        borderWidth: 0, borderRadius: 2
+      }];
     } else {
       bDatasets = [
         { label:'Steps',    data:data.map(d=>d.stepCals), backgroundColor:'#4a8c72cc', borderWidth:0, borderRadius:2 },
