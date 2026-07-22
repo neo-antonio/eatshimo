@@ -1636,11 +1636,15 @@ function renderExerciseCard() {
     const kcal = total > 0 ? calcExCals(ex, total) : 0;
     return `
     <div class="ex-item" data-ex-id="${ex.id}">
-      <span class="ex-name">${ex.name}</span>
-      <span class="ex-stat">${total} reps · ${kcal} kcal</span>
-      <input type="number" class="ex-input" data-ex-id="${ex.id}" placeholder="+reps" min="1" />
-      <button class="btn-log-set" data-ex-id="${ex.id}">+</button>
-      <button class="btn-ex-settings" data-ex-id="${ex.id}">⚙</button>
+      <div class="ex-item-info">
+        <span class="ex-name">${ex.name}</span>
+        <span class="ex-stat">${total} reps · ${kcal} kcal</span>
+      </div>
+      <div class="ex-item-actions">
+        <input type="number" class="ex-input" data-ex-id="${ex.id}" placeholder="+reps" min="1" />
+        <button class="btn-log-set" data-ex-id="${ex.id}">+</button>
+        <button class="btn-ex-settings" data-ex-id="${ex.id}">⚙</button>
+      </div>
     </div>`;
   }).join('');
 
