@@ -727,22 +727,23 @@ footer {
 .toggle-switch input:checked + .toggle-slider { background: var(--border); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
 
-/* ─── EXERCISE TRACKER (horizontal scroll, one compact block per exercise) ─── */
-.ex-list-scroll { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
+/* ─── EXERCISE TRACKER (full-width rows, styled like Food Moderator items) ─── */
+.ex-list-scroll { display: flex; flex-direction: column; margin-bottom: 12px; }
 .ex-list-scroll:empty { margin-bottom: 0; }
 .ex-item {
-  display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
-  width: 148px; max-width: 62vw;
-  background: var(--bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 8px 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  background: var(--bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 11px 13px; margin-bottom: 8px;
 }
+.ex-item:last-of-type { margin-bottom: 0; }
 .ex-item-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.ex-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ex-stat { font-size: 11px; color: var(--text-mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ex-item-actions { display: flex; align-items: center; gap: 5px; }
-.ex-input { width: 0; flex: 1 1 auto; min-width: 0; padding: 6px 6px; font-size: 12.5px; border: 1px solid var(--input-border); border-radius: 7px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; }
-.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0 0 0 3px var(--accent-dim); }
-.btn-log-set { flex-shrink: 0; padding: 6px 9px; font-size: 13px; font-weight: 700; }
-.btn-ex-settings { flex-shrink: 0; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 5px 8px; font-size: 12px; box-shadow: none; line-height: 1; }
+.ex-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.ex-stat { font-size: 12px; color: var(--text-dim); }
+.ex-item-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+input.ex-input { width: 70px; flex-shrink: 0; padding: 6px 8px; font-size: 13px; border: 1px solid var(--input-border); border-radius: 7px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; }
+input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0 0 0 3px var(--accent-dim); }
+.btn-log-set { flex-shrink: 0; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 5px 12px; font-size: 13px; font-weight: 700; box-shadow: none; }
+.btn-log-set:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+.btn-ex-settings { flex-shrink: 0; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 5px 10px; font-size: 13px; box-shadow: none; line-height: 1; }
 .btn-ex-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
 
 /* ─── SAVED EXERCISE PICKER (Add Exercise Modal) ─── */
