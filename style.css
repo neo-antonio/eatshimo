@@ -389,10 +389,6 @@ button:active { transform: scale(0.97); }
 .tdee-current { font-size: 12px; color: var(--text-dim); text-align: center; padding-top: 4px; font-style: italic; }
 
 /* ─── CHARTS ─── */
-.chart-period-tabs { display: flex; gap: 3px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
-.period-tab { background: transparent; color: var(--text-dim); border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 500; box-shadow: none; font-family:'Ubuntu',sans-serif; }
-.period-tab:hover { background: var(--border); box-shadow: none; opacity: 1; color: var(--text); }
-.period-tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
 .chart-section { margin-bottom: 24px; }
 .chart-section:last-child { margin-bottom: 0; }
 .chart-title { font-size: 11px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
@@ -698,26 +694,7 @@ footer {
 .collapse-chevron { font-size: 11px; color: var(--text-dim); flex-shrink: 0; padding: 2px 4px; }
 .collapsible-body { margin-top: 14px; }
 
-/* ─── EXERCISE TRACKER ─── */
-.ex-item { background: var(--bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
-.ex-item:last-of-type { margin-bottom: 0; }
-.ex-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
-.ex-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ex-name { font-size: 14px; font-weight: 700; color: var(--text); }
-.ex-type-badge { font-size: 10px; font-weight: 600; color: var(--text-mid); background: var(--accent-dim); border-radius: 4px; padding: 2px 6px; text-transform: uppercase; letter-spacing: 0.04em; }
-.btn-ex-settings { background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 8px; padding: 5px 9px; font-size: 14px; box-shadow: none; line-height: 1; flex-shrink: 0; }
-.btn-ex-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
-.ex-progress-bar-wrap { height: 5px; background: var(--accent-dim); border-radius: 5px; margin-bottom: 9px; overflow: hidden; }
-.ex-progress-bar { height: 100%; background: var(--border); border-radius: 5px; transition: width 0.3s; }
-.ex-summary { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
-.ex-sets-display { font-size: 13px; color: var(--text-mid); line-height: 1.4; }
-.ex-kcal { font-size: 12px; color: var(--success); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-.ex-log-row { display: flex; gap: 6px; align-items: center; }
-.ex-input { flex: 1; min-width: 0; padding: 8px 10px; font-size: 14px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; }
-.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0 0 0 3px var(--accent-dim); }
-.btn-log-set { flex-shrink: 0; padding: 8px 14px; font-size: 13px; font-weight: 600; }
-.btn-remove-set { flex-shrink: 0; padding: 8px 10px; font-size: 12px; background: var(--bg); color: var(--text-dim); border: 1px solid var(--input-border); box-shadow: none; }
-.btn-remove-set:hover { background: var(--danger-dim); color: var(--danger); opacity: 1; box-shadow: none; }
+/* ─── EXERCISE TRACKER (see horizontal-scroll rules further below) ─── */
 .btn-add-card-item { width: 100%; margin-top: 12px; background: var(--accent-dim); color: var(--text); border: 1px solid var(--input-border); box-shadow: none; font-size: 13px; font-weight: 500; }
 .btn-add-card-item:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
 .card-btn-row { display: flex; gap: 8px; margin-top: 12px; }
@@ -750,23 +727,31 @@ footer {
 .toggle-switch input:checked + .toggle-slider { background: var(--border); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
 
-/* ─── DAY PICKER ─── */
-.day-picker { display: flex; gap: 5px; flex-wrap: wrap; }
-.day-btn {
-  width: 36px; height: 36px; border-radius: 8px;
-  border: 1.5px solid var(--input-border); background: var(--bg);
-  color: var(--text-dim); font-size: 12px; font-weight: 700;
-  box-shadow: none; padding: 0; cursor: pointer; transition: all 0.12s; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
+/* ─── EXERCISE TRACKER (horizontal scroll, one line per exercise) ─── */
+.ex-list-scroll { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
+.ex-list-scroll:empty { margin-bottom: 0; }
+.ex-item {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;
+  background: var(--bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 9px 12px;
 }
-.day-btn.active { background: var(--border); border-color: var(--border); color: #fff; }
-.day-btn:hover { border-color: var(--border); opacity: 1; box-shadow: none; }
-.ex-day-tags { display: flex; gap: 3px; flex-wrap: wrap; }
-.ex-day-tag {
-  font-size: 9px; font-weight: 700; color: var(--text-mid);
-  background: var(--accent-dim); border-radius: 4px; padding: 1px 4px;
-  text-transform: uppercase; letter-spacing: 0.03em;
+.ex-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.ex-stat { font-size: 12px; color: var(--text-mid); }
+.ex-input { width: 58px; flex-shrink: 0; padding: 6px 8px; font-size: 13px; border: 1px solid var(--input-border); border-radius: 7px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; }
+.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0 0 0 3px var(--accent-dim); }
+.btn-log-set { flex-shrink: 0; padding: 6px 10px; font-size: 13px; font-weight: 700; }
+.btn-ex-settings { flex-shrink: 0; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 5px 9px; font-size: 13px; box-shadow: none; line-height: 1; }
+.btn-ex-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
+
+/* ─── SAVED EXERCISE PICKER (Add Exercise Modal) ─── */
+.ex-lib-picker { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.ex-lib-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex-shrink: 0; white-space: nowrap;
+  background: var(--bg); border: 1px solid var(--input-border); border-radius: 9px; padding: 7px 11px;
+  cursor: pointer; box-shadow: none; text-align: left;
 }
+.ex-lib-chip:hover { border-color: var(--border); background: var(--accent-dim); opacity: 1; box-shadow: none; }
+.ex-lib-chip-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.ex-lib-chip-cals { font-size: 11px; color: var(--text-dim); }
 
 /* ─── ASK AI BUTTON (Add Exercise Modal) ─── */
 .ask-ai-row {
@@ -891,7 +876,7 @@ footer {
 /* ─── TRENDS & STATISTICS ─── */
 .trends-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .trends-header h2 { margin-bottom: 0; flex-shrink: 0; }
-.trends-tab-row { display: flex; align-items: center; gap: 6px; }
+.trends-tab-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .trends-controls { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; flex-shrink: 0; }
 .chart-period-tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 8px; padding: 3px; border: 1px solid var(--input-border); }
 .period-tab { background: transparent; color: var(--text-mid); border: none; border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; box-shadow: none; transition: background 0.12s, color 0.12s; }
@@ -902,12 +887,22 @@ footer {
 .chart-custom-range input[type="date"] { padding: 5px 8px; border: 1px solid var(--input-border); border-radius: 7px; background: var(--surface); color: var(--text); font-family: 'Ubuntu', sans-serif; font-size: 12px; }
 .btn-chart-apply { background: var(--border); color: #fff; border: none; border-radius: 7px; padding: 5px 12px; font-size: 12px; font-weight: 600; box-shadow: none; }
 .btn-chart-apply:hover { opacity: 0.85; box-shadow: none; }
-.btn-chart-settings { background: var(--accent-dim) !important; color: var(--text-mid) !important; border-color: var(--input-border) !important; }
+.btn-chart-settings {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg) !important;
+  color: var(--text-mid) !important;
+  border: 1px solid var(--input-border) !important;
+  border-radius: 8px !important;
+  min-width: 36px;
+  width: auto;
+}
 .btn-chart-settings:hover { background: var(--border) !important; color: #fff !important; }
 .btn-card-settings { display: inline-flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 3px 8px; font-size: 13px; line-height: 1; cursor: pointer; user-select: none; }
 .btn-card-settings:hover { background: var(--border); color: #fff; }
-.chart-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
-.chart-filter-select { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--surface); color: var(--text-mid); font-family: 'Ubuntu', sans-serif; }
+.chart-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px; flex-wrap: nowrap; }
+.chart-title-row .chart-title { margin-bottom: 0; white-space: nowrap; flex-shrink: 0; }
+.chart-filter-select { font-size: 11px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--surface); color: var(--text-mid); font-family: 'Ubuntu', sans-serif; flex-shrink: 1; min-width: 0; max-width: 46%; }
 .macro-view-toggle { display: flex; gap: 3px; }
 .mvt-btn { background: var(--bg); color: var(--text-dim); border: 1px solid var(--input-border); border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; box-shadow: none; }
 .mvt-btn.active { background: var(--border); color: #fff; border-color: var(--border); }

@@ -233,7 +233,7 @@
           <span class="collapse-chevron" id="chevron-exercise">▲</span>
         </div>
         <div class="collapsible-body" id="body-exercise">
-          <div id="exercise-list"></div>
+          <div id="exercise-list" class="ex-list-scroll"></div>
           <button class="btn-add-card-item" onclick="openAddExModal()">+ Add Exercise</button>
         </div>
       </section>
@@ -471,18 +471,6 @@
           <div class="chart-wrap"><canvas id="chart-sleep"></canvas></div>
         </div>
 
-        <!-- Exercise Heatmap -->
-        <div class="chart-section" id="cs-ex-heatmap" style="display:none;">
-          <div class="chart-title">Exercise Heatmap</div>
-          <div class="heatmap-legend">
-            <span class="hm-swatch hm-none"></span><span>No exercise</span>
-            <span class="hm-swatch hm-partial"></span><span>Not met</span>
-            <span class="hm-swatch hm-done"></span><span>Goal met</span>
-          </div>
-          <div class="heatmap-grid" id="heatmap-exercise"></div>
-          <div class="heatmap-rate" id="heatmap-ex-rate"></div>
-        </div>
-
       </section>
 
       <section class="card">
@@ -493,7 +481,7 @@
           <button class="btn-secondary" onclick="document.getElementById('json-import').click()" style="flex:1;min-width:130px;">Import JSON</button>
           <input type="file" id="json-import" accept=".json" style="display:none;" onchange="importData(event)" />
         </div>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Export only the three health cards (exercises, fasting, food moderator) as a separate file.</p>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Export only your food library (saved foods) as a separate file.</p>
         <button onclick="exportFoodLibrary()" class="btn-secondary" style="width:100%;margin-top:8px;">Export Food Library Only</button>
         <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--text-dim);"></div>
       </section>
@@ -716,53 +704,16 @@
       <div class="ask-ai-row">
         <button class="btn-ask-ai" onclick="openAskAI()">✦ Ask AI for Calories Burnt</button>
       </div>
-      <div class="section-divider">Repeat Schedule</div>
-      <div class="rec-section">
-        <div class="field full" style="margin-top:10px;">
-          <select id="new-ex-recurrence" onchange="updateRecurrenceUI('new-ex')">
-            <option value="weekly">Weekly (specific days)</option>
-            <option value="once">This day only — no repeat</option>
-            <option value="every_x_days">Every N days</option>
-            <option value="every_x_weeks">Every N weeks</option>
-            <option value="every_x_months">Every N months (same date)</option>
-            <option value="every_x_years">Every N years (same date)</option>
-          </select>
-        </div>
-        <div class="rec-row" id="new-ex-days-row">
-          <label class="rec-label">Days of week</label>
-          <div class="day-picker" id="new-ex-days-picker">
-            <button class="day-btn active" data-day="1" onclick="toggleDayBtn(this)">M</button>
-            <button class="day-btn active" data-day="2" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn active" data-day="3" onclick="toggleDayBtn(this)">W</button>
-            <button class="day-btn active" data-day="4" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn active" data-day="5" onclick="toggleDayBtn(this)">F</button>
-            <button class="day-btn active" data-day="6" onclick="toggleDayBtn(this)">S</button>
-            <button class="day-btn active" data-day="0" onclick="toggleDayBtn(this)">S</button>
-          </div>
-        </div>
-        <div class="rec-row" id="new-ex-interval-row" style="display:none;">
-          <label class="rec-label">Repeat every</label>
-          <div class="interval-row">
-            <input type="number" id="new-ex-interval" min="1" value="2" class="interval-input" />
-            <span id="new-ex-interval-unit" class="interval-unit">weeks</span>
-          </div>
-        </div>
-  <div class="rec-row" id="new-ex-past-row">
-    <label class="ask-ai-check">
-      <input type="checkbox" id="new-ex-apply-past" />
-      Also apply to past dates
-    </label>
-  </div>
-      </div>
+
+      <div class="section-divider" style="margin-top:14px;">Saved Exercises</div>
+      <input type="text" id="ex-lib-search" placeholder="Search past exercises..." oninput="renderExLibPicker(this.value)" style="margin-bottom:10px;" />
+      <div class="ex-lib-picker" id="ex-lib-picker"></div>
+
       <div class="section-divider" style="margin-top:14px;">Exercise Details</div>
       <div class="form-grid" style="margin-top:10px;">
         <div class="field full"><label>Exercise Name</label><input type="text" id="new-ex-name" placeholder="e.g. Pull-up" /></div>
-        <div class="field">
-          <label>Type</label>
-          <select id="new-ex-type"><option value="reps">Reps</option><option value="secs">Seconds</option></select>
-        </div>
-        <div class="field"><label>Daily Goal (optional)</label><input type="number" id="new-ex-goal" placeholder="e.g. 50" min="0" /></div>
-        <div class="field full"><label>Calories burnt per rep / sec <span style="color:var(--danger);">*</span></label><input type="number" id="new-ex-cals-per-unit" placeholder="e.g. 0.5" min="0" step="0.01" /></div>
+        <div class="field"><label>Reps</label><input type="number" id="new-ex-reps" placeholder="e.g. 10" min="1" /></div>
+        <div class="field"><label>Calories burnt per rep <span style="color:var(--danger);">*</span></label><input type="number" id="new-ex-cals-per-unit" placeholder="e.g. 0.5" min="0" step="0.01" /></div>
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeAddExModal()">Close</button>
@@ -777,70 +728,11 @@
       <h2>Edit Exercise</h2>
       <div class="form-grid">
         <div class="field full"><label>Name</label><input type="text" id="edit-ex-name" /></div>
-        <div class="field full"><label>Daily Goal (0 = no goal)</label><input type="number" id="edit-ex-goal" min="0" placeholder="e.g. 50" /></div>
-        <div class="field full"><label>Calories burnt per rep / sec <span style="color:var(--danger);">*</span></label><input type="number" id="edit-ex-cals-per-unit" placeholder="e.g. 0.5" min="0" step="0.01" /></div>
-      </div>
-      <div class="section-divider">Repeat Schedule</div>
-      <div class="rec-section">
-        <div class="field full" style="margin-top:10px;">
-          <select id="edit-ex-recurrence" onchange="updateRecurrenceUI('edit-ex')">
-            <option value="weekly">Weekly (specific days)</option>
-            <option value="once">This day only — no repeat</option>
-            <option value="every_x_weeks">Every N weeks</option>
-            <option value="every_x_months">Every N months (same date)</option>
-            <option value="every_x_years">Every N years (same date)</option>
-            <option value="every_x_days">Every N days</option>
-          </select>
-        </div>
-        <div class="rec-row" id="edit-ex-days-row">
-          <label class="rec-label">Days of week</label>
-          <div class="day-picker" id="edit-ex-days-picker">
-            <button class="day-btn " data-day="1" onclick="toggleDayBtn(this)">M</button>
-            <button class="day-btn " data-day="2" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn " data-day="3" onclick="toggleDayBtn(this)">W</button>
-            <button class="day-btn " data-day="4" onclick="toggleDayBtn(this)">T</button>
-            <button class="day-btn " data-day="5" onclick="toggleDayBtn(this)">F</button>
-            <button class="day-btn " data-day="6" onclick="toggleDayBtn(this)">S</button>
-            <button class="day-btn " data-day="0" onclick="toggleDayBtn(this)">S</button>
-          </div>
-        </div>
-        <div class="rec-row" id="edit-ex-interval-row" style="display:none;">
-          <label class="rec-label">Repeat every</label>
-          <div class="interval-row">
-            <input type="number" id="edit-ex-interval" min="1" value="2" class="interval-input" />
-            <span id="edit-ex-interval-unit" class="interval-unit">weeks</span>
-          </div>
-        </div>
-        <div class="rec-row">
-          <label class="rec-label">End condition</label>
-          <select id="edit-ex-end-type" onchange="updateEndUI('edit-ex')">
-            <option value="never">Never ends</option>
-            <option value="date">On a specific date</option>
-            <option value="occurrences">After N scheduled occurrences</option>
-            <option value="accomplishments">After N completions</option>
-          </select>
-        </div>
-        <div class="rec-row" id="edit-ex-end-date-row" style="display:none;">
-          <label class="rec-label">End date</label>
-          <input type="date" id="edit-ex-end-date" />
-        </div>
-        <div class="rec-row" id="edit-ex-end-count-row" style="display:none;">
-          <label class="rec-label" id="edit-ex-end-count-label">After how many?</label>
-          <div class="interval-row"><input type="number" id="edit-ex-end-count" min="1" value="10" class="interval-input" /></div>
-        </div>
+        <div class="field full"><label>Calories burnt per rep <span style="color:var(--danger);">*</span></label><input type="number" id="edit-ex-cals-per-unit" placeholder="e.g. 0.5" min="0" step="0.01" /></div>
       </div>
       <div class="modal-actions">
-        <button class="btn-danger" onclick="showDeletePanel('ex')">Remove</button>
+        <button class="btn-danger" onclick="deleteExercise()">Remove</button>
         <button onclick="saveEditEx()">Save</button>
-      </div>
-      <div id="ex-delete-panel" class="delete-panel" style="display:none;">
-        <p class="delete-panel-title">Remove from which occurrences?</p>
-        <div class="delete-panel-btns">
-          <button class="btn-delete-opt" onclick="deleteExFromTracker('once')">This day only</button>
-          <button class="btn-delete-opt" onclick="deleteExFromTracker('future')">This &amp; future days</button>
-          <button class="btn-delete-opt btn-delete-all" onclick="deleteExFromTracker('all')">All occurrences</button>
-        </div>
-        <button class="btn-delete-cancel" onclick="hideDeletePanel('ex')">Cancel</button>
       </div>
     </div>
   </div>
@@ -873,9 +765,12 @@
       <p id="editcooldown-cat-name" style="font-size:13px;color:var(--text-dim);margin-bottom:14px;"></p>
 
       <div class="form-grid">
-        <div class="field full">
-          <label>Default cooldown (days)</label>
-          <input type="number" id="editcooldown-default" min="1" />
+        <div class="field full" style="flex-direction:row;align-items:flex-end;gap:8px;">
+          <div style="flex:1;">
+            <label>Default cooldown (days)</label>
+            <input type="number" id="editcooldown-default" min="1" />
+          </div>
+          <button class="btn-foodmod-action" style="flex-shrink:0;padding:9px 14px;" onclick="saveEditCooldownDefault()">Save</button>
         </div>
       </div>
 
@@ -885,22 +780,11 @@
       <div class="cooldown-adjust-row">
         <div class="cooldown-adjust-group">
           <label class="rec-label">Set exact remaining days</label>
-          <div class="interval-row">
-            <input type="number" id="editcooldown-current" min="0" class="interval-input" style="width:80px;" />
-            <button class="btn-foodmod-action" onclick="applyCooldownExact()">Set</button>
-          </div>
-        </div>
-        <div class="cooldown-adjust-group">
-          <label class="rec-label">Add days to remaining</label>
-          <div class="interval-row">
-            <input type="number" id="editcooldown-add" min="1" value="1" class="interval-input" style="width:80px;" />
+          <div class="interval-row" style="flex-wrap:wrap;">
+            <input type="number" id="editcooldown-current" min="0" class="interval-input" style="width:70px;" />
+            <input type="number" id="editcooldown-add" min="1" value="1" class="interval-input" style="width:55px;" />
             <button class="btn-foodmod-action" onclick="applyCooldownAdd()">+ Add</button>
-          </div>
-        </div>
-        <div class="cooldown-adjust-group">
-          <label class="rec-label">Reduce days from remaining</label>
-          <div class="interval-row">
-            <input type="number" id="editcooldown-reduce" min="1" value="1" class="interval-input" style="width:80px;" />
+            <input type="number" id="editcooldown-reduce" min="1" value="1" class="interval-input" style="width:55px;" />
             <button class="btn-foodmod-action" onclick="applyCooldownReduce()">− Reduce</button>
           </div>
         </div>
@@ -908,7 +792,7 @@
 
       <div class="modal-actions" style="margin-top:18px;">
         <button class="btn-secondary" onclick="clearOneCooldown()">Clear Cooldown</button>
-        <button onclick="saveEditCooldownDefault()">Save Default</button>
+        <button onclick="applyCooldownExact()">Set</button>
       </div>
     </div>
   </div>
@@ -975,7 +859,6 @@
         <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-water" onchange="saveChartSettings()" /> <span>Water</span></label>
         <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-steps" onchange="saveChartSettings()" /> <span>Steps</span></label>
         <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-sleep" onchange="saveChartSettings()" /> <span>Sleep</span></label>
-        <label class="chart-setting-row"><input type="checkbox" id="cs-toggle-ex-heatmap" onchange="saveChartSettings()" /> <span>Exercise Heatmap</span></label>
       </div>
       <div class="modal-actions">
         <button onclick="document.getElementById('chart-settings-overlay').classList.add('hidden')">Done</button>
@@ -997,7 +880,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v2.4</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v4.1</p>
   </footer>
 
 <style>

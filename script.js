@@ -598,7 +598,7 @@ let macroView = 'stack';   // 'stack' | 'pie'
 let charts = {};
 
 // Chart visibility settings (all on by default)
-const CHART_DEFAULTS = { macros:true, burnt:false, weight:true, water:false, steps:false, sleep:false, 'ex-heatmap':false };
+const CHART_DEFAULTS = { macros:true, burnt:false, weight:true, water:false, steps:false, sleep:false };
 const CHART_SETTINGS_VERSION = 2;
 function getChartSettings() {
   const stored = JSON.parse(localStorage.getItem('eatshimo_chart_settings') || 'null');
@@ -611,7 +611,7 @@ function getChartSettings() {
   return stored;
 }
 function saveChartSettings() {
-  const keys = ['macros','burnt','weight','water','steps','sleep','ex-heatmap'];
+  const keys = ['macros','burnt','weight','water','steps','sleep'];
   const settings = { _v: CHART_SETTINGS_VERSION };
   keys.forEach(k => {
     const el = document.getElementById('cs-toggle-' + k);
@@ -622,7 +622,7 @@ function saveChartSettings() {
   renderCharts();
 }
 function applyChartVisibility(settings) {
-  const map = { macros:'cs-macros', burnt:'cs-burnt', weight:'cs-weight', water:'cs-water', steps:'cs-steps', sleep:'cs-sleep', 'ex-heatmap':'cs-ex-heatmap' };
+  const map = { macros:'cs-macros', burnt:'cs-burnt', weight:'cs-weight', water:'cs-water', steps:'cs-steps', sleep:'cs-sleep' };
   Object.entries(map).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = (settings[k] !== false) ? '' : 'none';
@@ -1010,53 +1010,6 @@ function renderCharts() {
     const recSlEl = document.getElementById('rec-sleep');
     if (recSlEl) recSlEl.innerHTML = sleepRec;
     makeBarChart('chart-sleep', labels, [{ label:'Sleep (hrs)', data:data.map(d=>d.sleep), backgroundColor:'#9b7fd4cc', borderWidth:0, borderRadius:2 }], false);
-  }
-
-  // ── Exercise Heatmap ──
-  if (settings['ex-heatmap'] !== false) renderExerciseHeatmap();
-}
-
-// ── Heatmaps ──────────────────────────────────────────────
-function getHeatmapDates() {
-  const dates = getDatesInRange();
-  return dates.slice(-84); // cap at 84 days (12 weeks) for readability
-}
-
-function renderExerciseHeatmap() {
-  const el = document.getElementById('heatmap-exercise');
-  if (!el) return;
-  const dates = getHeatmapDates();
-  const activeList = getActiveExList();
-  const lib = getExLib();
-
-  let score = 0, possible = 0;
-  const cells = dates.map(ds => {
-    const data  = getDayData(ds);
-    const exDay = data.exercises || {};
-    const applicable = activeList.filter(entry => recurrenceAppliesOnDate(entry.recurrence, ds) && !exEntryHasEnded(entry, ds));
-    if (applicable.length === 0) return `<span class="hm-cell hm-none" title="${ds}"></span>`;
-    possible++;
-    let allMet = true, anyDone = false;
-    applicable.forEach(entry => {
-      const ex = lib.find(e => e.id === entry.id);
-      if (!ex) return;
-      const sets = (exDay[ex.id] || {}).sets || [];
-      const total = sets.reduce((a,b)=>a+b,0);
-      if (total > 0) anyDone = true;
-      if (ex.goal > 0 && total < ex.goal) allMet = false;
-      if (ex.goal === 0 && total === 0) allMet = false;
-    });
-    if (allMet && anyDone) { score += 1; return `<span class="hm-cell hm-done" title="${ds}"></span>`; }
-    if (anyDone) { score += 0.5; return `<span class="hm-cell hm-partial" title="${ds}"></span>`; }
-    score += 0;
-    return `<span class="hm-cell hm-fail" title="${ds}"></span>`;
-  }).join('');
-
-  el.innerHTML = cells;
-  const rateEl = document.getElementById('heatmap-ex-rate');
-  if (rateEl && possible > 0) {
-    const pct = Math.round((score / possible) * 100);
-    rateEl.textContent = `Accomplishment rate: ${pct}% (${Math.round(score)} / ${possible} scheduled days)`;
   }
 }
 
@@ -1622,10 +1575,9 @@ function openAskAI() {
   const who = parts.length ? `a ${parts.join(', ')}` : 'someone';
 
   const exName = document.getElementById('new-ex-name')?.value.trim();
-  const exType = document.getElementById('new-ex-type')?.value === 'secs' ? 'second held' : 'repetition';
   const exerciseDesc = exName ? `"${exName}"` : 'an exercise of your choice';
 
-  const prompt = `For ${who}, estimate how many calories are burnt per ${exType} doing ${exerciseDesc}. Give a single decimal number (e.g. 0.4) I can enter directly, plus a one-line explanation of how you calculated it.`;
+  const prompt = `For ${who}, estimate how many calories are burnt per repetition doing ${exerciseDesc}. Give a single decimal number (e.g. 0.4) I can enter directly, plus a one-line explanation of how you calculated it.`;
 
   navigator.clipboard?.writeText(prompt).catch(() => {});
   window.open('https://chatgpt.com/?q=' + encodeURIComponent(prompt), '_blank');
@@ -1650,255 +1602,40 @@ function initCardCollapse(card) {
   chevron.textContent = collapsed ? '▼' : '▲';
 }
 
-// ─── RECURRENCE SYSTEM ──────────────────────────────────
-function recurrenceAppliesOnDate(rec, dateString) {
-  if (!rec) return true;
-  // Hard exclusions
-  if (rec.endDate && dateString > rec.endDate) return false;
-  if (rec.exceptions && rec.exceptions.includes(dateString)) return false;
-  const date = new Date(dateString + 'T00:00:00');
-  const dow  = date.getDay(); // 0=Sun
-
-  switch (rec.type) {
-    case 'once':
-      return dateString === rec.date;
-
-    case 'weekly': {
-      if (rec.activeSince && dateString < rec.activeSince) return false;
-      return !rec.days || rec.days.length === 0 || rec.days.includes(dow);
-    }
-
-    case 'every_x_weeks': {
-      if (rec.activeSince && dateString < rec.activeSince) return false;
-      if (!rec.days || !rec.days.includes(dow)) return false;
-      if (!rec.startDate) return true;
-      const start = new Date(rec.startDate + 'T00:00:00');
-      const startMon = new Date(start); startMon.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-      const curMon   = new Date(date);  curMon.setDate(date.getDate()   - ((date.getDay()  + 6) % 7));
-      const diffW = Math.round((curMon - startMon) / (7 * 864e5));
-      return diffW >= 0 && diffW % (rec.interval || 1) === 0;
-    }
-
-    case 'every_x_months': {
-      if (rec.activeSince && dateString < rec.activeSince) return false;
-      if (!rec.startDate) return true;
-      const start = new Date(rec.startDate + 'T00:00:00');
-      if (date.getDate() !== start.getDate()) return false;
-      const mDiff = (date.getFullYear() - start.getFullYear()) * 12 + (date.getMonth() - start.getMonth());
-      return mDiff >= 0 && mDiff % (rec.interval || 1) === 0;
-    }
-
-    case 'every_x_years': {
-      if (rec.activeSince && dateString < rec.activeSince) return false;
-      if (!rec.startDate) return true;
-      const start = new Date(rec.startDate + 'T00:00:00');
-      if (date.getMonth() !== start.getMonth() || date.getDate() !== start.getDate()) return false;
-      const yDiff = date.getFullYear() - start.getFullYear();
-      return yDiff >= 0 && yDiff % (rec.interval || 1) === 0;
-    }
-
-    case 'every_x_days': {
-      if (rec.activeSince && dateString < rec.activeSince) return false;
-      if (!rec.startDate) return true;
-      const start = new Date(rec.startDate + 'T00:00:00');
-      const diffDays = Math.round((date - start) / 864e5);
-      return diffDays >= 0 && diffDays % (rec.interval || 1) === 0;
-    }
-
-    default: return true;
-  }
-}
-
-function updateRecurrenceUI(prefix) {
-  const type = document.getElementById(prefix + '-recurrence').value;
-  const showDays     = type === 'weekly' || type === 'every_x_weeks';
-  const showInterval = type === 'every_x_weeks' || type === 'every_x_months' || type === 'every_x_years' || type === 'every_x_days';
-  const showPast     = type !== 'once';
-  const units = { every_x_weeks: 'weeks', every_x_months: 'months', every_x_years: 'years', every_x_days: 'days' };
-  const daysRow = document.getElementById(prefix + '-days-row');
-  const intRow  = document.getElementById(prefix + '-interval-row');
-  const pastRow = document.getElementById(prefix + '-past-row');
-  if (daysRow) daysRow.style.display = showDays     ? '' : 'none';
-  if (intRow)  intRow.style.display  = showInterval ? '' : 'none';
-  if (pastRow) pastRow.style.display = showPast     ? '' : 'none';
-  const unitEl = document.getElementById(prefix + '-interval-unit');
-  if (unitEl && units[type]) unitEl.textContent = units[type];
-}
-
-function updateEndUI(prefix) {
-  const endType = document.getElementById(prefix + '-end-type')?.value || 'never';
-  const dateRow  = document.getElementById(prefix + '-end-date-row');
-  const countRow = document.getElementById(prefix + '-end-count-row');
-  const label    = document.getElementById(prefix + '-end-count-label');
-  if (dateRow)  dateRow.style.display  = endType === 'date'           ? '' : 'none';
-  if (countRow) countRow.style.display = (endType === 'occurrences' || endType === 'accomplishments') ? '' : 'none';
-  if (label) label.textContent = endType === 'accomplishments' ? 'After how many completions?' : 'After how many occurrences?';
-}
-
-function getRecurrenceFromModal(prefix) {
-  const sel  = document.getElementById(prefix + '-recurrence');
-  const type = sel ? sel.value : 'weekly';
-  const rec  = { type };
-  const today = dateStr(currentDate);
-  const applyPastEl = document.getElementById(prefix + '-apply-past');
-  const applyPast   = applyPastEl ? applyPastEl.checked : false;
-
-  if (type === 'once') {
-    rec.date = today;
-  } else {
-    rec.activeSince = applyPast ? null : today;
-    if (type === 'weekly') {
-      rec.days = getPickerDays(prefix + '-days-picker');
-    } else if (type === 'every_x_weeks') {
-      rec.days      = getPickerDays(prefix + '-days-picker');
-      rec.interval  = parseInt(document.getElementById(prefix + '-interval')?.value) || 1;
-      rec.startDate = today;
-    } else if (type === 'every_x_days') {
-      rec.interval  = parseInt(document.getElementById(prefix + '-interval')?.value) || 1;
-      rec.startDate = today;
-    } else if (type === 'every_x_months' || type === 'every_x_years') {
-      rec.interval  = parseInt(document.getElementById(prefix + '-interval')?.value) || 1;
-      rec.startDate = today;
-    }
-  }
-
-  // End condition
-  const endType = document.getElementById(prefix + '-end-type')?.value || 'never';
-  rec.endType = endType;
-  if (endType === 'date') {
-    rec.endDate = document.getElementById(prefix + '-end-date')?.value || null;
-  } else if (endType === 'occurrences') {
-    rec.endAfterOccurrences = parseInt(document.getElementById(prefix + '-end-count')?.value) || 0;
-  } else if (endType === 'accomplishments') {
-    rec.endAfterAccomplishments = parseInt(document.getElementById(prefix + '-end-count')?.value) || 0;
-  }
-
-  return rec;
-}
-
-function setRecurrenceToModal(prefix, rec) {
-  if (!rec) rec = { type: 'weekly', days: [0,1,2,3,4,5,6] };
-  const sel = document.getElementById(prefix + '-recurrence');
-  if (sel) sel.value = rec.type || 'weekly';
-  if (rec.days)     setPickerDays(prefix + '-days-picker', rec.days);
-  if (rec.interval) { const el = document.getElementById(prefix + '-interval'); if (el) el.value = rec.interval; }
-  updateRecurrenceUI(prefix);
-  // Restore end condition
-  const endType = rec.endType || 'never';
-  const endSel = document.getElementById(prefix + '-end-type');
-  if (endSel) endSel.value = endType;
-  if (endType === 'date' && rec.endDate) {
-    const el = document.getElementById(prefix + '-end-date'); if (el) el.value = rec.endDate;
-  } else if (endType === 'occurrences' && rec.endAfterOccurrences) {
-    const el = document.getElementById(prefix + '-end-count'); if (el) el.value = rec.endAfterOccurrences;
-  } else if (endType === 'accomplishments' && rec.endAfterAccomplishments) {
-    const el = document.getElementById(prefix + '-end-count'); if (el) el.value = rec.endAfterAccomplishments;
-  }
-  updateEndUI(prefix);
-}
-
 // ─── EXERCISE TRACKER ───────────────────────────────────
 function getExLib() {
   return JSON.parse(localStorage.getItem('eatshimo_ex_lib') || '[]');
 }
 function saveExLib(lib) { localStorage.setItem('eatshimo_ex_lib', JSON.stringify(lib)); }
 
-// Active list: [{id, recurrence:{...}}]
-// Transparently migrates old formats
-function getActiveExList() {
-  const raw = JSON.parse(localStorage.getItem('eatshimo_active_ex') || '[]');
-  return raw.map(item => {
-    if (typeof item === 'string')
-      return { id: item, recurrence: { type: 'weekly', days: [0,1,2,3,4,5,6], activeSince: null } };
-    // migrate old {id, days, activeSince} format
-    if (item.days !== undefined && !item.recurrence)
-      return { id: item.id, recurrence: { type: 'weekly', days: item.days, activeSince: item.activeSince } };
-    return item;
-  });
-}
-function saveActiveExList(list) { localStorage.setItem('eatshimo_active_ex', JSON.stringify(list)); }
-
-// Day picker helpers
-function toggleDayBtn(btn) { btn.classList.toggle('active'); btn.blur(); }
-
-function getPickerDays(pickerId) {
-  const days = [];
-  document.querySelectorAll('#' + pickerId + ' .day-btn.active').forEach(btn => {
-    days.push(parseInt(btn.dataset.day));
-  });
-  return days.length > 0 ? days : [0,1,2,3,4,5,6];
-}
-
-function setPickerDays(pickerId, days) {
-  document.querySelectorAll('#' + pickerId + ' .day-btn').forEach(btn => {
-    btn.classList.toggle('active', days.includes(parseInt(btn.dataset.day)));
-  });
-}
-
 function renderExerciseCard() {
   const lib = getExLib();
-  const activeList = getActiveExList();
   const key = dateStr(currentDate);
   const data = getDayData(key);
   const exercises = data.exercises || {};
   const list = document.getElementById('exercise-list');
   if (!list) return;
 
-  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dayOfWeek = new Date(key + 'T00:00:00').getDay();
-  const applicable = activeList.filter(entry =>
-    recurrenceAppliesOnDate(entry.recurrence, key) && !exEntryHasEnded(entry, key)
-  );
+  const loggedIds = Object.keys(exercises).filter(id => (exercises[id].sets || []).length > 0);
 
-  if (applicable.length === 0) {
-    const hasAny = activeList.length > 0;
-    list.innerHTML = hasAny
-      ? `<p class="empty-msg" style="padding:12px 0 4px;">No exercises scheduled for ${DAY_NAMES[dayOfWeek]}.</p>`
-      : `<p class="card-desc">Log workouts like pushups, planks, or runs and track calories burned per session.</p>`;
+  if (loggedIds.length === 0) {
+    list.innerHTML = `<p class="card-desc">Log workouts like pushups, planks, or runs and track calories burned per session.</p>`;
     return;
   }
 
-  list.innerHTML = applicable.map(entry => {
-    const ex = lib.find(e => e.id === entry.id);
+  list.innerHTML = loggedIds.map(exId => {
+    const ex = lib.find(e => e.id === exId);
     if (!ex) return '';
-    const sets = (exercises[ex.id] || {}).sets || [];
+    const sets = exercises[exId].sets || [];
     const total = sets.reduce((a, b) => a + b, 0);
     const kcal = total > 0 ? calcExCals(ex, total) : 0;
-    const unit = ex.type === 'reps' ? 'reps' : 'sec';
-    const goal = ex.goal > 0;
-    const progress = goal ? Math.min(100, Math.round((total / ex.goal) * 100)) : 0;
-    const goalText = goal ? `/ ${ex.goal} ${unit}` : '';
-    const r = entry.recurrence || {};
-    let dayTags = '';
-    if (r.type === 'once') dayTags = '<span class="ex-day-tag">Once</span>';
-    else if (r.type === 'every_x_days')   dayTags = `<span class="ex-day-tag">Every ${r.interval||1}d</span>`;
-    else if (r.type === 'every_x_weeks')  dayTags = `<span class="ex-day-tag">Every ${r.interval||1}w</span>`;
-    else if (r.type === 'every_x_months') dayTags = `<span class="ex-day-tag">Every ${r.interval||1}mo</span>`;
-    else if (r.type === 'every_x_years')  dayTags = `<span class="ex-day-tag">Every ${r.interval||1}yr</span>`;
-    else if (r.type === 'weekly' && r.days && r.days.length < 7)
-      dayTags = r.days.sort().map(d => `<span class="ex-day-tag">${DAY_NAMES[d].slice(0,1)}</span>`).join('');
     return `
     <div class="ex-item" data-ex-id="${ex.id}">
-      <div class="ex-header">
-        <div class="ex-name-row">
-          <span class="ex-name">${ex.name}</span>
-          <span class="ex-type-badge">${ex.type === 'reps' ? 'Reps' : 'Secs'}</span>
-          ${dayTags ? `<span class="ex-day-tags">${dayTags}</span>` : ''}
-        </div>
-        <button class="btn-ex-settings" data-ex-id="${ex.id}">⚙</button>
-      </div>
-      ${goal ? `<div class="ex-progress-bar-wrap"><div class="ex-progress-bar" style="width:${progress}%"></div></div>` : ''}
-      <div class="ex-summary">
-        ${sets.length > 0
-          ? `<span class="ex-sets-display">${sets.join(' · ')} = <strong>${total}</strong> ${unit} ${goalText}</span>`
-          : `<span class="ex-sets-display" style="color:var(--text-dim);">No sets logged yet ${goalText ? '(' + ex.goal + ' ' + unit + ')' : ''}</span>`}
-        ${kcal > 0 ? `<span class="ex-kcal">≈ ${kcal} kcal</span>` : ''}
-      </div>
-      <div class="ex-log-row">
-        <input type="number" class="ex-input" data-ex-id="${ex.id}" placeholder="${ex.type === 'reps' ? 'reps' : 'secs'}" min="1" />
-        <button class="btn-log-set" data-ex-id="${ex.id}">Log Set</button>
-        ${sets.length > 0 ? `<button class="btn-remove-set" data-ex-id="${ex.id}">Undo</button>` : ''}
-      </div>
+      <span class="ex-name">${ex.name}</span>
+      <span class="ex-stat">${total} reps · ${kcal} kcal</span>
+      <input type="number" class="ex-input" data-ex-id="${ex.id}" placeholder="+reps" min="1" />
+      <button class="btn-log-set" data-ex-id="${ex.id}">+</button>
+      <button class="btn-ex-settings" data-ex-id="${ex.id}">⚙</button>
     </div>`;
   }).join('');
 
@@ -1908,12 +1645,9 @@ function renderExerciseCard() {
   });
   list.querySelectorAll('.btn-log-set').forEach(btn => {
     btn.addEventListener('click', () => {
-      const input = btn.closest('.ex-log-row').querySelector('.ex-input');
+      const input = btn.closest('.ex-item').querySelector('.ex-input');
       logExSetDirect(btn.dataset.exId, input);
     });
-  });
-  list.querySelectorAll('.btn-remove-set').forEach(btn => {
-    btn.addEventListener('click', () => removeLastExSet(btn.dataset.exId));
   });
   list.querySelectorAll('.ex-input').forEach(input => {
     input.addEventListener('keydown', e => { if (e.key === 'Enter') { logExSetDirect(input.dataset.exId, input); } });
@@ -1931,54 +1665,76 @@ function logExSetDirect(exId, input) {
   renderExerciseCard();
 }
 
-function logExSet(exId) {
-  const input = document.getElementById('ex-input-' + exId) || document.querySelector(`.ex-input[data-ex-id="${exId}"]`);
-  if (input) logExSetDirect(exId, input);
-}
+// Saved-exercise search picker (shown in place of the old repeat-schedule section)
+function renderExLibPicker(query) {
+  const el = document.getElementById('ex-lib-picker');
+  if (!el) return;
+  const lib = getExLib();
+  const q = (query || '').trim().toLowerCase();
+  const filtered = q ? lib.filter(e => e.name.toLowerCase().includes(q)) : lib;
 
-function removeLastExSet(exId) {
-  const key = dateStr(currentDate), data = getDayData(key);
-  if (data.exercises[exId] && data.exercises[exId].sets.length > 0) {
-    data.exercises[exId].sets.pop();
-    saveDayData(key, data);
+  if (lib.length === 0) {
+    el.innerHTML = '<p class="card-desc" style="padding:6px 0;">No saved exercises yet — add one below and it\'ll show up here next time.</p>';
+    return;
   }
-  renderExerciseCard();
+  if (filtered.length === 0) {
+    el.innerHTML = '<p class="empty-msg" style="padding:6px 0;">No matches.</p>';
+    return;
+  }
+  el.innerHTML = filtered.map(ex => `
+    <button type="button" class="ex-lib-chip" data-ex-id="${ex.id}">
+      <span class="ex-lib-chip-name">${ex.name}</span>
+      <span class="ex-lib-chip-cals">${ex.calsPerUnit} kcal/rep</span>
+    </button>`).join('');
+  el.querySelectorAll('.ex-lib-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ex = lib.find(e => e.id === btn.dataset.exId);
+      if (!ex) return;
+      document.getElementById('new-ex-name').value = ex.name;
+      document.getElementById('new-ex-cals-per-unit').value = ex.calsPerUnit;
+      document.getElementById('new-ex-reps').focus();
+    });
+  });
 }
 
 // Add Exercise Modal
-function openAddExModal(defaultRec) {
-  const type = defaultRec || 'weekly';
-  const sel = document.getElementById('new-ex-recurrence');
-  if (sel) sel.value = type;
-  setPickerDays('new-ex-days-picker', [0,1,2,3,4,5,6]);
-  const pastCb = document.getElementById('new-ex-apply-past');
-  if (pastCb) pastCb.checked = false;
-  updateRecurrenceUI('new-ex');
+function openAddExModal() {
   document.getElementById('new-ex-name').value = '';
-  document.getElementById('new-ex-goal').value = '';
+  document.getElementById('new-ex-reps').value = '';
   document.getElementById('new-ex-cals-per-unit').value = '';
+  const searchEl = document.getElementById('ex-lib-search');
+  if (searchEl) searchEl.value = '';
+  renderExLibPicker('');
   document.getElementById('add-ex-overlay').classList.remove('hidden');
 }
 function closeAddExModal() {
   document.getElementById('add-ex-overlay').classList.add('hidden');
-  renderExerciseCard();
 }
 
 function addCustomExercise() {
   const name = document.getElementById('new-ex-name').value.trim();
-  const type = document.getElementById('new-ex-type').value;
-  const goal = parseInt(document.getElementById('new-ex-goal').value) || 0;
+  const reps = parseFloat(document.getElementById('new-ex-reps').value) || 0;
   const calsPerUnit = parseFloat(document.getElementById('new-ex-cals-per-unit').value) || 0;
   if (!name) { alert('Please enter an exercise name.'); return; }
-  if (!calsPerUnit || calsPerUnit <= 0) { alert('Please enter calories burnt per rep/sec. Use "Ask AI for Calories Burnt" if unsure.'); return; }
+  if (!calsPerUnit || calsPerUnit <= 0) { alert('Please enter calories burnt per rep. Use "Ask AI for Calories Burnt" if unsure.'); return; }
+  if (!reps || reps <= 0) { alert('Please enter how many reps you did.'); return; }
+
   const lib = getExLib();
-  const id = 'ex_' + Date.now();
-  lib.push({ id, name, type, goal, calsPerUnit });
+  // Reuse a saved exercise with the same name if one exists, so history/search stays tidy
+  let ex = lib.find(e => e.name.toLowerCase() === name.toLowerCase());
+  if (ex) {
+    ex.calsPerUnit = calsPerUnit;
+  } else {
+    ex = { id: 'ex_' + Date.now(), name, calsPerUnit };
+    lib.push(ex);
+  }
   saveExLib(lib);
-  const rec = getRecurrenceFromModal('new-ex');
-  const list = getActiveExList();
-  list.push({ id, recurrence: rec });
-  saveActiveExList(list);
+
+  const key = dateStr(currentDate), data = getDayData(key);
+  if (!data.exercises[ex.id]) data.exercises[ex.id] = { sets: [] };
+  data.exercises[ex.id].sets.push(reps);
+  saveDayData(key, data);
+
   document.getElementById('add-ex-overlay').classList.add('hidden');
   renderExerciseCard();
 }
@@ -1991,10 +1747,7 @@ function openEditExModal(exId) {
   const ex = getExLib().find(e => e.id === exId);
   if (!ex) return;
   document.getElementById('edit-ex-name').value = ex.name;
-  document.getElementById('edit-ex-goal').value = ex.goal || '';
   document.getElementById('edit-ex-cals-per-unit').value = ex.calsPerUnit || '';
-  const entry = getActiveExList().find(e => e.id === exId);
-  setRecurrenceToModal('edit-ex', entry?.recurrence);
   document.getElementById('edit-ex-overlay').classList.remove('hidden');
 }
 
@@ -2004,94 +1757,21 @@ function saveEditEx() {
   if (idx === -1) return;
   const name = document.getElementById('edit-ex-name').value.trim();
   const calsPerUnit = parseFloat(document.getElementById('edit-ex-cals-per-unit').value) || 0;
-  if (!calsPerUnit || calsPerUnit <= 0) { alert('Please enter calories burnt per rep/sec.'); return; }
+  if (!calsPerUnit || calsPerUnit <= 0) { alert('Please enter calories burnt per rep.'); return; }
   if (name) lib[idx].name = name;
-  lib[idx].goal = parseInt(document.getElementById('edit-ex-goal').value) || 0;
   lib[idx].calsPerUnit = calsPerUnit;
   saveExLib(lib);
-  const list = getActiveExList();
-  const entryIdx = list.findIndex(e => e.id === editExId);
-  if (entryIdx !== -1) list[entryIdx].recurrence = getRecurrenceFromModal('edit-ex');
-  saveActiveExList(list);
   document.getElementById('edit-ex-overlay').classList.add('hidden');
   renderExerciseCard();
 }
 
-function prevDateStr(ds) {
-  const d = new Date(ds + 'T00:00:00'); d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
-
-// Count how many days rec applied from start up to (but not including) dateString
-function countOccurrences(rec, dateString) {
-  const startDs = rec.activeSince || rec.startDate || '2020-01-01';
-  if (dateString <= startDs) return 0;
-  let count = 0;
-  const recNoEnd = { ...rec, endDate: null, endAfterOccurrences: undefined, endAfterAccomplishments: undefined };
-  const start = new Date(startDs + 'T00:00:00');
-  const end   = new Date(dateString + 'T00:00:00');
-  for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-    if (recurrenceAppliesOnDate(recNoEnd, d.toISOString().slice(0, 10))) count++;
-  }
-  return count;
-}
-
-// Count days where exercise was actually completed (sets logged)
-function countExAccomplishments(exId, toDateString) {
-  let count = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (!k || !k.startsWith('eatshimo_day_')) continue;
-    const ds = k.replace('eatshimo_day_', '');
-    if (ds >= toDateString) continue;
-    try {
-      const d = JSON.parse(localStorage.getItem(k));
-      if (d?.exercises?.[exId]?.sets?.length > 0) count++;
-    } catch(e) {}
-  }
-  return count;
-}
-
-function exEntryHasEnded(entry, dateString) {
-  const rec = entry.recurrence || {};
-  if (!rec.endType || rec.endType === 'never') return false;
-  if (rec.endType === 'date') return rec.endDate ? dateString > rec.endDate : false;
-  if (rec.endType === 'occurrences')
-    return rec.endAfterOccurrences ? countOccurrences(rec, dateString) >= rec.endAfterOccurrences : false;
-  if (rec.endType === 'accomplishments')
-    return rec.endAfterAccomplishments ? countExAccomplishments(entry.id, dateString) >= rec.endAfterAccomplishments : false;
-  return false;
-}
-
-function showDeletePanel(type) {
-  document.getElementById(type + '-delete-panel').style.display = '';
-}
-function hideDeletePanel(type) {
-  document.getElementById(type + '-delete-panel').style.display = 'none';
-}
-
-function deleteExFromTracker(mode) {
-  const today = dateStr(currentDate);
-  if (mode === 'all') {
-    saveActiveExList(getActiveExList().filter(e => e.id !== editExId));
-  } else if (mode === 'once') {
-    const list = getActiveExList();
-    const idx = list.findIndex(e => e.id === editExId);
-    if (idx !== -1) {
-      if (!list[idx].recurrence.exceptions) list[idx].recurrence.exceptions = [];
-      if (!list[idx].recurrence.exceptions.includes(today)) list[idx].recurrence.exceptions.push(today);
-      saveActiveExList(list);
-    }
-  } else if (mode === 'future') {
-    const list = getActiveExList();
-    const idx = list.findIndex(e => e.id === editExId);
-    if (idx !== -1) {
-      list[idx].recurrence.endDate = prevDateStr(today);
-      saveActiveExList(list);
-    }
-  }
+// Removes today's logged entry for this exercise (the saved exercise itself stays searchable for reuse)
+function deleteExercise() {
+  if (!editExId) return;
+  const key = dateStr(currentDate), data = getDayData(key);
+  delete data.exercises[editExId];
+  saveDayData(key, data);
   document.getElementById('edit-ex-overlay').classList.add('hidden');
-  hideDeletePanel('ex');
   renderExerciseCard();
 }
 
@@ -2306,6 +1986,8 @@ function checkFoodModerator(foodName) {
   catIds.forEach(catId => {
     const cat = cats.find(c => c.id === catId);
     if (!cat) return;
+    // Already triggered by an earlier food/meal logged on this same date — count as a single trigger, not one per food.
+    if (cds[catId] && cds[catId].lastConsumed === logDate) return;
     const rem = cooldownDaysRemaining(catId);
     let newCooldown = cat.cooldownDays;
     if (rem > 0 && setting === 'extend') newCooldown = rem + cat.cooldownDays;
@@ -2556,7 +2238,7 @@ function clearOneCooldown() {
 // ─── JSON EXPORT / IMPORT ───────────────────────────────────
 // ════════════════════════════════════════════════════════════
 const ALL_CARD_KEYS = [
-  'eatshimo_ex_lib','eatshimo_active_ex',
+  'eatshimo_ex_lib',
   'eatshimo_fasting','eatshimo_food_cats','eatshimo_food_tags',
   'eatshimo_cooldowns','eatshimo_cooldown_setting'
 ];
