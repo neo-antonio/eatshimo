@@ -1,6 +1,4 @@
-// Stashimo Service Worker
-// Bump CACHE_VERSION on every deploy to GitHub Pages so users pick up new files.
-const CACHE_VERSION = 'stashimo-v0.4.1';
+const CACHE_VERSION = 'stashimo-v4.2';
 const CACHE_NAME = CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -36,11 +34,6 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Network-first for EVERYTHING (HTML, JS, CSS, manifest). This guarantees the
-// HTML, script, and stylesheet always land together as a matched set whenever
-// the device is online, avoiding stale-file mismatches (e.g. new HTML paired
-// with an old cached script expecting different form fields). Cache is only
-// used as an offline fallback.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;

@@ -1,4 +1,3 @@
-// ─── DATA HELPERS ────────────────────────────────────────
 let foods = JSON.parse(localStorage.getItem('eatshimo_foods') || '[]');
 
 function saveFoodsToDisk() {
@@ -11,14 +10,14 @@ function getTimezone() {
 }
 
 function dateStr(d) {
-  // Use the user's timezone to determine the correct local date
+  
   const tz = getTimezone();
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
-  return parts; // en-CA gives YYYY-MM-DD format
+  return parts; 
 }
 
 function nowInTZ() {
-  // Returns a Date object adjusted so getFullYear/Month/Date reflect the user's timezone
+  
   const tz = getTimezone();
   const str = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   const [y, m, day] = str.split('-').map(Number);
@@ -50,7 +49,6 @@ function getAllDayKeys() {
   return keys.sort();
 }
 
-// ─── THEMES ──────────────────────────────────────────────
 const THEMES = {
   slate:    { label: 'Slate',    border: '#3d4452', borderLite: '#555d70', headerBg: '#2c313a', accentDim: 'rgba(61,68,82,0.07)' },
   ocean:    { label: 'Ocean',    border: '#1a5276', borderLite: '#2471a3', headerBg: '#0e3460', accentDim: 'rgba(26,82,118,0.07)' },
@@ -74,14 +72,14 @@ const LIGHT_DEFAULTS = {
 function applyTheme(id) {
   const t = THEMES[id] || THEMES.slate;
   const r = document.documentElement.style;
-  // Accent / header vars (all themes)
+  
   r.setProperty('--border',      t.border);
   r.setProperty('--border-lite', t.borderLite);
   r.setProperty('--header-bg',   t.headerBg);
   r.setProperty('--footer-bg',   t.headerBg);
   r.setProperty('--accent',      t.border);
   r.setProperty('--accent-dim',  t.accentDim);
-  // Background / text vars — use theme overrides if dark, else restore defaults
+  
   const d = t.dark ? t : LIGHT_DEFAULTS;
   r.setProperty('--bg',           d.bg);
   r.setProperty('--surface',      d.surface);
@@ -118,7 +116,6 @@ function renderThemePicker() {
     </button>`).join('');
 }
 
-// ─── NAV ─────────────────────────────────────────────────
 let libraryExpanded = false;
 
 function showPage(page, btn, bnavId) {
@@ -127,21 +124,20 @@ function showPage(page, btn, bnavId) {
   document.querySelectorAll('.bottom-nav-btn').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   if (btn) btn.classList.add('active');
-  // sync top nav active state
+  
   const topNav = document.querySelector(`.nav-tab[onclick*="'${page}'"]`);
   if (topNav) topNav.classList.add('active');
-  // sync bottom nav
+  
   const bId = bnavId || page;
   const bBtn = document.getElementById('bnav-' + bId);
   if (bBtn) bBtn.classList.add('active');
-  // Reset library collapse on every tab switch
+  
   if (page !== 'library') libraryExpanded = false;
   if (page === 'daily')   renderDailyLog();
   if (page === 'library') renderLibrary();
   if (page === 'profile') { loadProfile(); renderCharts(); initPeriodTabs(); loadChartSettingsUI(); renderThemePicker(); loadCardToggles(); }
 }
 
-// ─── DATE NAV ────────────────────────────────────────────
 let currentDate = nowInTZ();
 
 function formatDateDisplay(d) {
@@ -157,7 +153,6 @@ function formatDateDisplay(d) {
 function changeDate(dir) { currentDate.setDate(currentDate.getDate() + dir); renderDailyLog(); }
 function goToToday() { currentDate = nowInTZ(); renderDailyLog(); }
 
-// ─── DAILY LOG ───────────────────────────────────────────
 function renderDailyLog() {
   const key  = dateStr(currentDate);
   const data = getDayData(key);
@@ -216,7 +211,6 @@ function renderDailyLog() {
   document.getElementById('weight-val').textContent = data.weight ? data.weight + ' kg' : '—';
   document.getElementById('sleep-val').textContent  = data.sleep  ? data.sleep + ' hrs' : '—';
 
-  // Steps → calories burned (profile-aware)
   const stepsEl = document.getElementById('steps-burned');
   if (data.steps && data.steps > 0) {
     stepsEl.textContent = `≈ ${calcStepCalories(data.steps)} kcal`;
@@ -224,14 +218,13 @@ function renderDailyLog() {
     stepsEl.textContent = '';
   }
 
-  // Card visibility
   const extrasEnabled   = getCardEnabled('extras');
   const exerciseEnabled = getCardEnabled('exercise');
   document.getElementById('card-extras').style.display    = extrasEnabled   ? '' : 'none';
   document.getElementById('card-exercise').style.display  = exerciseEnabled ? '' : 'none';
   if (extrasEnabled)   initCardCollapse('extras');
   if (exerciseEnabled) { initCardCollapse('exercise');  renderExerciseCard(); }
-  // Fasting card
+  
   const fastingEnabled = getCardEnabled('fasting');
   const foodmodEnabled = getCardEnabled('foodmod');
   const fastEl = document.getElementById('card-fasting');
@@ -251,7 +244,6 @@ function openEditMealModal(index) {
   const m    = data.meals[index];
   mealEditMode = 'grams';
 
-  // Try to look up the original food in the library for accurate per-gram rates
   const libFood = foods.find(f => f.name === m.name);
   const baseG = libFood ? (libFood.grams || 100) : m.grams;
   const src   = libFood || m;
@@ -332,7 +324,7 @@ function editCalorieGoal() {
   if (val === null) return;
   if (!isNaN(val) && parseInt(val) > 0) {
     localStorage.setItem('eatshimo_cal_target', parseInt(val));
-    // Sync to profile display if profile page is loaded
+    
     const profGoalInput = document.getElementById('prof-calorie-goal');
     if (profGoalInput) profGoalInput.value = parseInt(val);
     updateProfileCalorieGoalDisplay();
@@ -356,7 +348,7 @@ function saveCalorieGoalFromProfile() {
     localStorage.removeItem('eatshimo_cal_target');
   }
   updateProfileCalorieGoalDisplay();
-  // Reflect in daily log if it's rendered
+  
   renderDailyLog();
   alert('Calorie goal updated!');
 }
@@ -420,7 +412,6 @@ function logSleep() {
   renderDailyLog();
 }
 
-// ─── LOG MEAL MODAL ──────────────────────────────────────
 let selectedFoodIndex = null;
 
 function openLogModal() {
@@ -441,7 +432,7 @@ function renderLogFoodList(query) {
     list.innerHTML = '<p class="empty-msg" style="padding:16px 0;">No foods match your search.</p>';
     return;
   }
-  // Store original index for each
+  
   list.innerHTML = filtered.map(f => {
     const origIdx = foods.findIndex(food => food.name === f.name);
     return `
@@ -488,7 +479,6 @@ function confirmLogMeal() {
 function closeLogModal(e)  { if (e.target===document.getElementById('log-modal-overlay')) closeLogModalDirect(); }
 function closeLogModalDirect() { document.getElementById('log-modal-overlay').classList.add('hidden'); }
 
-// ─── CALENDAR ────────────────────────────────────────────
 let calViewDate = new Date();
 
 function openCalendar() {
@@ -529,7 +519,6 @@ function pickCalDay(ds) {
   renderDailyLog();
 }
 
-// ─── PROFILE ─────────────────────────────────────────────
 function loadProfile() {
   const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
   if (p.gender)       document.getElementById('prof-gender').value       = p.gender;
@@ -542,7 +531,7 @@ function loadProfile() {
   if (p.proteinGoal)  document.getElementById('prof-protein-goal').value = p.proteinGoal;
   if (p.carbsGoal)    document.getElementById('prof-carbs-goal').value   = p.carbsGoal;
   if (p.fatGoal)      document.getElementById('prof-fat-goal').value     = p.fatGoal;
-  // Load calorie goal
+  
   const calTarget = localStorage.getItem('eatshimo_cal_target');
   if (calTarget) document.getElementById('prof-calorie-goal').value = calTarget;
   updateProfileCalorieGoalDisplay();
@@ -590,19 +579,17 @@ function setTDEEGoal(type) {
   alert(`Calorie goal set to ${val} kcal/day!`);
 }
 
-// ─── CHARTS ──────────────────────────────────────────────
 let chartPeriod = 'daily';
-let chartDateFrom = null;  // YYYY-MM-DD string for custom range
+let chartDateFrom = null;  
 let chartDateTo   = null;
-let macroView = 'stack';   // 'stack' | 'pie'
+let macroView = 'stack';   
 let charts = {};
 
-// Chart visibility settings (all on by default)
 const CHART_DEFAULTS = { macros:true, burnt:false, weight:true, water:false, steps:false, sleep:false };
 const CHART_SETTINGS_VERSION = 2;
 function getChartSettings() {
   const stored = JSON.parse(localStorage.getItem('eatshimo_chart_settings') || 'null');
-  // Reset if no version or old version (before we defaulted water/steps/sleep to false)
+  
   if (!stored || stored._v !== CHART_SETTINGS_VERSION) {
     const fresh = { ...CHART_DEFAULTS, _v: CHART_SETTINGS_VERSION };
     localStorage.setItem('eatshimo_chart_settings', JSON.stringify(fresh));
@@ -641,10 +628,9 @@ function openChartSettings() {
   document.getElementById('chart-settings-overlay').classList.remove('hidden');
 }
 
-// Fasting / Food Mod settings modals
 function openFastingSettings() {
   const cfg = getFastingConfig();
-  // Sync preset buttons
+  
   document.querySelectorAll('#fasting-settings-overlay .fast-preset-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.preset === cfg.preset);
   });
@@ -664,7 +650,6 @@ function openFoodModSettings() {
   document.getElementById('foodmod-settings-overlay').classList.remove('hidden');
 }
 
-// Period tabs with smart disabling based on date range
 function initPeriodTabs() {
   const tabs = document.querySelectorAll('#chart-period-tabs .period-tab');
   tabs.forEach(tab => {
@@ -684,7 +669,7 @@ function applyCustomRange() {
   chartDateFrom = document.getElementById('chart-date-from').value;
   chartDateTo   = document.getElementById('chart-date-to').value;
   if (!chartDateFrom || !chartDateTo || chartDateFrom > chartDateTo) return;
-  // Smart: disable daily if range > 90 days
+  
   const fromMs = new Date(chartDateFrom + 'T00:00:00').getTime();
   const toMs   = new Date(chartDateTo   + 'T00:00:00').getTime();
   const days   = Math.ceil((toMs - fromMs) / 864e5);
@@ -705,7 +690,6 @@ function setMacroView(view) {
   renderCharts();
 }
 
-// ── Data helpers ──────────────────────────────────────────
 function calcDayBMR(ds) {
   const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
   if (!p.weight || !p.height || !p.age) return 0;
@@ -754,8 +738,9 @@ function getChartData() {
     const data = getDayData(ds);
     const stepCals = calcStepCalories(data.steps || 0);
     const exCals   = calcDayExerciseCals(ds);
-    const bmr      = calcDayBMR(ds);
     const consumed = Math.round(data.meals.reduce((s, m) => s + m.calories, 0));
+    const hasActivity = data.meals.length > 0 || exCals > 0;
+    const bmr = hasActivity ? calcDayBMR(ds) : null;
     return {
       ds,
       label:    new Date(ds + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }),
@@ -767,8 +752,10 @@ function getChartData() {
       water:    data.water  || 0,
       steps:    data.steps  || 0,
       sleep:    data.sleep  || null,
-      stepCals, exCals, bmr,
-      netCals:  Math.round(consumed - stepCals - exCals - bmr),
+      stepCals: hasActivity ? stepCals : null,
+      exCals:   hasActivity ? exCals   : null,
+      bmr,
+      netCals:  hasActivity ? Math.round(consumed - stepCals - exCals - bmr) : null,
     };
   });
 
@@ -776,7 +763,6 @@ function getChartData() {
     return raw.map(r => ({ ...r }));
   }
 
-  // Aggregate by week or month
   const byKey = {};
   raw.forEach(r => {
     const d = new Date(r.ds + 'T00:00:00');
@@ -797,6 +783,10 @@ function getChartData() {
     const n = items.length || 1;
     const avg = f => Math.round(items.reduce((s, i) => s + (f(i)||0), 0) / n);
     const avgF = f => { const v = items.reduce((s, i) => s + (f(i)||0), 0); return v ? parseFloat((v/n).toFixed(1)) : null; };
+    const avgSkipNull = f => {
+      const vals = items.map(f).filter(v => v !== null && v !== undefined);
+      return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0) / vals.length) : null;
+    };
     const wts = items.filter(i => i.weight).map(i => i.weight);
     return {
       label,
@@ -808,15 +798,14 @@ function getChartData() {
       steps:    avg(i => i.steps),
       sleep:    avgF(i => i.sleep),
       weight:   wts.length ? parseFloat((wts.reduce((a,b)=>a+b,0)/wts.length).toFixed(1)) : null,
-      stepCals: avg(i => i.stepCals),
-      exCals:   avg(i => i.exCals),
-      bmr:      avg(i => i.bmr),
-      netCals:  avg(i => i.netCals),
+      stepCals: avgSkipNull(i => i.stepCals),
+      exCals:   avgSkipNull(i => i.exCals),
+      bmr:      avgSkipNull(i => i.bmr),
+      netCals:  avgSkipNull(i => i.netCals),
     };
   });
 }
 
-// ── Chart rendering ───────────────────────────────────────
 const CHART_OPTS = {
   responsive: true, maintainAspectRatio: false,
   plugins: { legend:{display:false}, tooltip:{mode:'index',intersect:false,backgroundColor:'#23272f',titleColor:'#f0f1f4',bodyColor:'#9aa0b4',borderColor:'#3a3f4d',borderWidth:1} },
@@ -867,7 +856,7 @@ function makePieChart(id, labels, values, colors) {
         const val = values[i];
         if (!val || total <= 0) return;
         const pct = Math.round((val / total) * 100);
-        if (pct < 5) return; // skip tiny slices to avoid clutter
+        if (pct < 5) return; 
         const pos = arc.tooltipPosition();
         ctx.fillText(`${pct}%`, pos.x, pos.y);
       });
@@ -920,18 +909,16 @@ function renderCharts() {
   const settings = getChartSettings();
   applyChartVisibility(settings);
 
-  // ── Calories (vertical bar) ──
   makeBarChart('chart-calories', labels, [{
     label:'Calories', data:data.map(d=>d.calories), backgroundColor:accent+'cc', borderColor:accent, borderWidth:1, borderRadius:3
   }], false);
 
-  // ── Macros ──
   if (settings.macros !== false) {
     if (macroView === 'pie') {
       const totP = data.reduce((s,d)=>s+d.protein,0);
       const totC = data.reduce((s,d)=>s+d.carbs,0);
       const totF = data.reduce((s,d)=>s+d.fat,0);
-      // Resize canvas for pie
+      
       const wrap = document.getElementById('macro-chart-wrap');
       if (wrap) wrap.style.height = '220px';
       makePieChart('chart-macros', ['Protein','Carbs','Fat'], [totP,totC,totF], ['#c0523a','#7b8fb0','#4a8c72']);
@@ -943,7 +930,7 @@ function renderCharts() {
         { label:'Carbs',   data:data.map(d=>d.carbs),   backgroundColor:'#7b8fb0cc', borderWidth:0, borderRadius:2 },
         { label:'Fat',     data:data.map(d=>d.fat),     backgroundColor:'#4a8c72cc', borderWidth:0, borderRadius:2 },
       ], true);
-      // Make stacked
+      
       if (charts['chart-macros']) {
         charts['chart-macros'].options.scales.x.stacked = true;
         charts['chart-macros'].options.scales.y.stacked = true;
@@ -952,7 +939,6 @@ function renderCharts() {
     }
   }
 
-  // ── Calories Burnt ──
   if (settings.burnt !== false) {
     const filter = document.getElementById('burnt-filter')?.value || 'all';
     let bDatasets;
@@ -984,11 +970,9 @@ function renderCharts() {
     }
   }
 
-  // ── Weight (line) ──
   if (settings.weight !== false)
     makeLineChart('chart-weight', labels, accent, data.map(d=>d.weight));
 
-  // ── Water recommendations ──
   const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
   if (settings.water !== false) {
     let recText = '';
@@ -1001,11 +985,9 @@ function renderCharts() {
     makeBarChart('chart-water', labels, [{ label:'Water (ml)', data:data.map(d=>d.water), backgroundColor:'#7b8fb0cc', borderWidth:0, borderRadius:2 }], false);
   }
 
-  // ── Steps (bar) ──
   if (settings.steps !== false)
     makeBarChart('chart-steps', labels, [{ label:'Steps', data:data.map(d=>d.steps), backgroundColor:'#4a8c72cc', borderWidth:0, borderRadius:2 }], false);
 
-  // ── Sleep ──
   if (settings.sleep !== false) {
     let sleepRec = '';
     if (p.age) {
@@ -1018,12 +1000,10 @@ function renderCharts() {
   }
 }
 
-// ─── EXPORT CSV ──────────────────────────────────────────
 function exportCSV() {
   const allKeys = getAllDayKeys();
   const rows = [];
 
-  // Section 1: Profile
   const prof = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
   const calTarget = localStorage.getItem('eatshimo_cal_target') || '';
   rows.push(['=== PROFILE ===']);
@@ -1035,7 +1015,6 @@ function exportCSV() {
   ]);
   rows.push(['']);
 
-  // Section 2: Daily logs — include full meal detail rows
   rows.push(['=== DAILY LOGS ===']);
   rows.push(['Date','Total Calories','Protein (g)','Carbs (g)','Fat (g)','Fiber (g)','Water (ml)','Steps','Weight (kg)','Sleep (hrs)','Meal Name','Meal Grams','Meal Calories','Meal Protein','Meal Carbs','Meal Fat','Meal Fiber']);
   allKeys.forEach(ds => {
@@ -1070,7 +1049,6 @@ function exportCSV() {
   });
   rows.push(['']);
 
-  // Section 3: Food library
   rows.push(['=== FOOD LIBRARY ===']);
   rows.push(['Name','Serving (g)','Calories','Protein (g)','Carbs (g)','Fat (g)','Fiber (g)']);
   [...foods].sort((a,b)=>a.name.localeCompare(b.name)).forEach(f => {
@@ -1085,7 +1063,6 @@ function exportCSV() {
   a.click();
 }
 
-// ─── IMPORT CSV ──────────────────────────────────────────
 function importCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -1099,21 +1076,18 @@ function importCSV(event) {
       const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l);
       let mode = null;
       let importedDays = 0, importedFoods = 0;
-      // Collect all meal rows per date before saving
-      const dayMeals = {}; // ds -> { meals:[], water, steps, weight }
+      
+      const dayMeals = {}; 
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
 
-        // Detect sections
         if (line.startsWith('=== PROFILE ==='))      { mode = 'profile'; continue; }
         if (line.startsWith('=== DAILY LOGS ==='))   { mode = 'logs';    continue; }
         if (line.startsWith('=== FOOD LIBRARY ===')) { mode = 'foods';   continue; }
 
-        // Skip header rows
         if (line.startsWith('Gender,') || line.startsWith('Date,') || line.startsWith('Name,')) continue;
 
-        // ── PROFILE ──
         if (mode === 'profile') {
           const cols = parseCSVLine(line);
           const p = {
@@ -1130,10 +1104,9 @@ function importCSV(event) {
           if (cols[5]) localStorage.setItem('eatshimo_cal_target', cols[5]);
         }
 
-        // ── DAILY LOGS ──
         if (mode === 'logs') {
           const cols = parseCSVLine(line);
-          // A row with a date in col 0 starts a new day
+          
           const ds = cols[0]?.trim();
           if (ds && /^\d{4}-\d{2}-\d{2}$/.test(ds)) {
             if (!dayMeals[ds]) {
@@ -1145,7 +1118,7 @@ function importCSV(event) {
                 meals:  []
               };
             }
-            // Meal columns start at col 10
+            
             const mealName = cols[10]?.replace(/"/g,'').trim();
             if (mealName) {
               dayMeals[ds].meals.push({
@@ -1159,7 +1132,7 @@ function importCSV(event) {
               });
             }
           } else if (ds === '' && cols[10]) {
-            // Continuation row — meal belongs to the last date
+            
             const lastDs = Object.keys(dayMeals).pop();
             if (lastDs) {
               const mealName = cols[10].replace(/"/g,'').trim();
@@ -1178,7 +1151,6 @@ function importCSV(event) {
           }
         }
 
-        // ── FOOD LIBRARY ──
         if (mode === 'foods') {
           const cols = parseCSVLine(line);
           if (cols.length < 4) continue;
@@ -1200,11 +1172,10 @@ function importCSV(event) {
         }
       }
 
-      // Save all collected day data
       Object.keys(dayMeals).forEach(ds => {
         const incoming = dayMeals[ds];
         const existing = getDayData(ds);
-        // Merge: prefer imported meals if any, merge extras
+        
         if (incoming.meals.length > 0) existing.meals = incoming.meals;
         if (incoming.water)  existing.water  = incoming.water;
         if (incoming.steps)  existing.steps  = incoming.steps;
@@ -1229,7 +1200,6 @@ function importCSV(event) {
   reader.readAsText(file);
 }
 
-// Properly parse a CSV line handling quoted fields
 function parseCSVLine(line) {
   const result = [];
   let cur = '', inQuote = false;
@@ -1243,7 +1213,6 @@ function parseCSVLine(line) {
   return result;
 }
 
-// ─── DELETE ALL DATA ─────────────────────────────────────
 function deleteAllData() {
   if (!confirm('This will permanently delete ALL your data — food library, daily logs, and profile. Are you sure?')) return;
   if (!confirm('Last warning: this cannot be undone. Delete everything?')) return;
@@ -1258,7 +1227,6 @@ function deleteAllData() {
   location.reload();
 }
 
-// ─── AI ESTIMATE ─────────────────────────────────────────
 function openAIEstimate() {
   const name  = document.getElementById('food-name').value.trim();
   const grams = document.getElementById('food-grams').value.trim();
@@ -1273,7 +1241,6 @@ function openAIEstimate() {
   window.open('https://chatgpt.com/?q=' + encodeURIComponent(prompt), '_blank');
 }
 
-// ─── FOOD LIBRARY ────────────────────────────────────────
 const PRESETS = {
   common: [
     { name:'White Rice',          grams:100, calories:130, protein:2.7, carbs:28,  fat:0.3, fiber:0.4 },
@@ -1423,7 +1390,6 @@ function deleteFood(index) {
   foods.splice(index,1); saveFoodsToDisk(); renderLibrary();
 }
 
-// ─── EDIT FOOD MODAL ────────────────────────────────────
 function openEdit(index) {
   const f = foods[index];
   document.getElementById('edit-index').value    = index;
@@ -1456,7 +1422,6 @@ function updateFood() {
   saveFoodsToDisk(); renderLibrary(); closeModalDirect();
 }
 
-// ─── KEYBOARD ────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModalDirect(); closeLogModalDirect(); closeCalendarDirect();
@@ -1467,7 +1432,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.closest('#add-section')) saveFood();
 });
 
-// ─── TUTORIAL ────────────────────────────────────────────
 let tutStep = 0;
 const TUT_STEPS = 3;
 
@@ -1506,7 +1470,6 @@ function renderTutStep() {
   next.textContent = tutStep === TUT_STEPS - 1 ? 'Get Started' : 'Next';
 }
 
-// ─── PROFILE-AWARE CALORIE HELPERS ──────────────────────
 function getProfileForCalc() {
   const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
   return {
@@ -1537,7 +1500,6 @@ function calcExCals(ex, totalUnits) {
   return Math.round(cal);
 }
 
-// ─── CARD TOGGLE SYSTEM ─────────────────────────────────
 function getCardEnabled(name) {
   return localStorage.getItem('eatshimo_card_' + name) !== 'false';
 }
@@ -1559,17 +1521,16 @@ function loadCardToggles() {
 function updateExtrasChartsVisibility() {
   const show = getCardEnabled('extras');
   const chartSettings = getChartSettings();
-  // Only show extras chart sections if both: extras card is enabled AND chart setting is on
+  
   ['water','steps','sleep','weight'].forEach(k => {
     const el = document.getElementById('cs-' + k);
     if (el) el.style.display = (show && chartSettings[k] !== false) ? '' : 'none';
-    // Disable the toggle checkbox if extras card is off
+    
     const cb = document.getElementById('cs-toggle-' + k);
     if (cb) cb.disabled = !show;
   });
 }
 
-// ─── ASK AI FOR EXERCISE SUGGESTIONS ────────────────────
 function openAskAI() {
   const p = JSON.parse(localStorage.getItem('eatshimo_profile') || '{}');
   const parts = [];
@@ -1588,7 +1549,6 @@ function openAskAI() {
   window.open('https://chatgpt.com/?q=' + encodeURIComponent(prompt), '_blank');
 }
 
-// ─── COLLAPSIBLE CARDS ──────────────────────────────────
 function toggleCardCollapse(card) {
   const body = document.getElementById('body-' + card);
   const chevron = document.getElementById('chevron-' + card);
@@ -1607,7 +1567,6 @@ function initCardCollapse(card) {
   chevron.textContent = collapsed ? '▼' : '▲';
 }
 
-// ─── EXERCISE TRACKER ───────────────────────────────────
 function getExLib() {
   return JSON.parse(localStorage.getItem('eatshimo_ex_lib') || '[]');
 }
@@ -1648,7 +1607,6 @@ function renderExerciseCard() {
     </div>`;
   }).join('');
 
-  // Event delegation — avoids inline onclick escaping issues
   list.querySelectorAll('.btn-ex-settings').forEach(btn => {
     btn.addEventListener('click', () => openEditExModal(btn.dataset.exId));
   });
@@ -1674,7 +1632,6 @@ function logExSetDirect(exId, input) {
   renderExerciseCard();
 }
 
-// Saved-exercise search picker (shown in place of the old repeat-schedule section)
 function renderExLibPicker(query) {
   const el = document.getElementById('ex-lib-picker');
   if (!el) return;
@@ -1706,7 +1663,6 @@ function renderExLibPicker(query) {
   });
 }
 
-// Add Exercise Modal
 function openAddExModal() {
   document.getElementById('new-ex-name').value = '';
   document.getElementById('new-ex-reps').value = '';
@@ -1729,7 +1685,7 @@ function addCustomExercise() {
   if (!reps || reps <= 0) { alert('Please enter how many reps you did.'); return; }
 
   const lib = getExLib();
-  // Reuse a saved exercise with the same name if one exists, so history/search stays tidy
+  
   let ex = lib.find(e => e.name.toLowerCase() === name.toLowerCase());
   if (ex) {
     ex.calsPerUnit = calsPerUnit;
@@ -1748,7 +1704,6 @@ function addCustomExercise() {
   renderExerciseCard();
 }
 
-// Edit Exercise Modal
 let editExId = null;
 
 function openEditExModal(exId) {
@@ -1774,7 +1729,6 @@ function saveEditEx() {
   renderExerciseCard();
 }
 
-// Removes today's logged entry for this exercise (the saved exercise itself stays searchable for reuse)
 function deleteExercise() {
   if (!editExId) return;
   const key = dateStr(currentDate), data = getDayData(key);
@@ -1784,9 +1738,6 @@ function deleteExercise() {
   renderExerciseCard();
 }
 
-// ════════════════════════════════════════════════════════════
-// ─── FASTING TRACKER ────────────────────────────────────────
-// ════════════════════════════════════════════════════════════
 let fastingTimerInterval = null;
 
 const FASTING_PRESETS = {
@@ -1861,12 +1812,10 @@ function renderFastingCard() {
   if (!document.getElementById('fasting-status-display')) return;
   const cfg = getFastingConfig();
 
-  // Update preset buttons
   document.querySelectorAll('.fast-preset-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.preset === cfg.preset);
   });
 
-  // Custom row
   const customRow = document.getElementById('fasting-custom-row');
   if (customRow) customRow.style.display = cfg.preset === 'custom' ? '' : 'none';
   if (cfg.preset === 'custom') {
@@ -1876,11 +1825,9 @@ function renderFastingCard() {
     if (ehEl) ehEl.value = cfg.eatingHours;
   }
 
-  // Start time input
   const stEl = document.getElementById('fast-start-time');
   if (stEl) stEl.value = `${String(cfg.startHour||20).padStart(2,'0')}:${String(cfg.startMin||0).padStart(2,'0')}`;
 
-  // Window label
   const eatStartH = ((cfg.startHour || 20) + (cfg.fastingHours || 16)) % 24;
   const eatStartM = cfg.startMin || 0;
   const fastRestartH = (eatStartH + (cfg.eatingHours || 8)) % 24;
@@ -1888,10 +1835,8 @@ function renderFastingCard() {
   if (wlEl) wlEl.textContent =
     `Fast ${formatTimeHHMM(cfg.startHour||20, cfg.startMin||0)} – ${formatTimeHHMM(eatStartH, eatStartM)}  ·  Eat ${formatTimeHHMM(eatStartH, eatStartM)} – ${formatTimeHHMM(fastRestartH, eatStartM)}`;
 
-  // Status display
   updateFastingDisplay(cfg);
 
-  // Timer
   if (fastingTimerInterval) clearInterval(fastingTimerInterval);
   fastingTimerInterval = setInterval(() => {
     if (document.getElementById('fasting-status-display') && getCardEnabled('fasting'))
@@ -1914,9 +1859,6 @@ function updateFastingDisplay(cfg) {
     </div>`;
 }
 
-// ════════════════════════════════════════════════════════════
-// ─── FOOD MODERATOR ─────────────────────────────────────────
-// ════════════════════════════════════════════════════════════
 function getFoodCats()    { return JSON.parse(localStorage.getItem('eatshimo_food_cats') || '[]'); }
 function saveFoodCats(v)  { localStorage.setItem('eatshimo_food_cats', JSON.stringify(v)); }
 function getFoodTags()    { return JSON.parse(localStorage.getItem('eatshimo_food_tags') || '{}'); }
@@ -1973,7 +1915,6 @@ function renderFoodModCard() {
     </div>`;
   }).join('');
 
-  // Attach events via data attributes (avoids inline quote escaping issues)
   list.querySelectorAll('[data-cat-id]').forEach(item => {
     const catId = item.dataset.catId;
     item.querySelector('.btn-foodmod-edit')?.addEventListener('click', () => openFoodCatModal(catId));
@@ -1982,7 +1923,6 @@ function renderFoodModCard() {
   });
 }
 
-// Check + update cooldown when food is logged
 function checkFoodModerator(foodName) {
   const tags = getFoodTags();
   const catIds = tags[foodName] || [];
@@ -1990,12 +1930,12 @@ function checkFoodModerator(foodName) {
   const cats = getFoodCats();
   const cds  = getCooldowns();
   const setting = getCooldownSetting();
-  // Use the date being viewed, not today — so logging on yesterday counts from yesterday
+  
   const logDate = dateStr(currentDate);
   catIds.forEach(catId => {
     const cat = cats.find(c => c.id === catId);
     if (!cat) return;
-    // Already triggered by an earlier food/meal logged on this same date — count as a single trigger, not one per food.
+    
     if (cds[catId] && cds[catId].lastConsumed === logDate) return;
     const rem = cooldownDaysRemaining(catId);
     let newCooldown = cat.cooldownDays;
@@ -2006,7 +1946,6 @@ function checkFoodModerator(foodName) {
   if (getCardEnabled('foodmod') && document.getElementById('foodmod-list')) renderFoodModCard();
 }
 
-// Manually start cooldown for a category (without a food being logged)
 function triggerCooldown(catId) {
   const cat = getFoodCats().find(c => c.id === catId);
   if (!cat) return;
@@ -2028,7 +1967,6 @@ function openFoodCatModal(catId) {
   document.getElementById('foodcat-delete-btn').style.display = cat ? '' : 'none';
   document.getElementById('foodcat-search').value = '';
 
-  // Pre-populate currently tagged foods for this category
   foodCatSelectedNames = catId
     ? Object.keys(tags).filter(name => (tags[name] || []).includes(catId))
     : [];
@@ -2100,11 +2038,9 @@ function saveFoodCat() {
   }
   saveFoodCats(cats);
 
-  // Determine which foods are newly added to this category in this save
   const prevTagged = Object.keys(tags).filter(fn => (tags[fn] || []).includes(catId));
   const newlyTagged = foodCatSelectedNames.filter(fn => !prevTagged.includes(fn));
 
-  // Save tags: remove this catId from all foods, then re-add to selected ones
   Object.keys(tags).forEach(foodName => {
     tags[foodName] = (tags[foodName] || []).filter(id => id !== catId);
   });
@@ -2114,7 +2050,6 @@ function saveFoodCat() {
   });
   saveFoodTags(tags);
 
-  // Only retroactively apply cooldowns for foods NEWLY tagged in this save
   if (newlyTagged.length > 0) {
     applyRetroactiveCooldowns(catId, days, newlyTagged);
   }
@@ -2123,12 +2058,9 @@ function saveFoodCat() {
   renderFoodModCard();
 }
 
-// Scan past daily logs for newly-tagged foods and apply cooldown if found within the cooldown window.
-// ONLY runs if the category has no active cooldown — never overrides an existing one.
 function applyRetroactiveCooldowns(catId, cooldownDays, newlyTaggedFoods) {
   if (!newlyTaggedFoods || newlyTaggedFoods.length === 0) return;
 
-  // If an active cooldown already exists, don't touch it
   if (cooldownDaysRemaining(catId) > 0) return;
 
   const cds = getCooldowns();
@@ -2169,7 +2101,6 @@ function deleteFoodCat() {
   renderFoodModCard();
 }
 
-// Edit Cooldown Modal
 let editingCooldownCatId = null;
 
 function openEditCooldownModal(catId) {
@@ -2196,7 +2127,7 @@ function _setCooldownRemaining(days) {
   }
   saveCooldowns(cds);
   renderFoodModCard();
-  // Refresh status label
+  
   const rem = cooldownDaysRemaining(editingCooldownCatId);
   const statusEl = document.getElementById('editcooldown-status');
   if (statusEl) statusEl.textContent = rem > 0
@@ -2232,7 +2163,6 @@ function saveEditCooldownDefault() {
   renderFoodModCard();
 }
 
-// Keep old saveEditCooldown as alias for backward compat
 function saveEditCooldown() { saveEditCooldownDefault(); }
 
 function clearOneCooldown() {
@@ -2243,9 +2173,6 @@ function clearOneCooldown() {
   renderFoodModCard();
 }
 
-// ════════════════════════════════════════════════════════════
-// ─── JSON EXPORT / IMPORT ───────────────────────────────────
-// ════════════════════════════════════════════════════════════
 const ALL_CARD_KEYS = [
   'eatshimo_ex_lib',
   'eatshimo_fasting','eatshimo_food_cats','eatshimo_food_tags',
@@ -2310,11 +2237,10 @@ function importData(event) {
   event.target.value = '';
 }
 
-// ─── INIT ────────────────────────────────────────────────
 loadTheme();
 renderLibrary();
 renderDailyLog();
-// Show tutorial on first launch
+
 currentDate = nowInTZ();
 if (!localStorage.getItem('eatshimo_tutorial_seen')) {
   setTimeout(openTutorial, 400);

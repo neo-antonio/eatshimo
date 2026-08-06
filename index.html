@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="screen-orientation" content="portrait" />
-  <!-- PWA -->
+  
   <link rel="manifest" href="manifest.json" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -12,14 +12,14 @@
   <meta name="apple-mobile-web-app-title" content="Eatshimo" />
   <meta name="theme-color" content="#2c313a" />
   <meta name="description" content="An open-source lightweight calorie tracker" />
-  <!-- Apple touch icons -->
+  
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <!-- Splash screen color -->
+  
   <meta name="msapplication-TileColor" content="#2c313a" />
   <title>Eatshimo</title>
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Apply saved theme immediately to avoid flash -->
+  
   <script>
     (function(){
       var THEME_MAP = {
@@ -73,7 +73,6 @@
 
   <main>
 
-    <!-- ══════════ FOOD LIBRARY PAGE ══════════ -->
     <div class="page active" id="page-library">
       <section class="card" id="add-section">
         <h2>Add Food</h2>
@@ -134,7 +133,6 @@
       </section>
     </div>
 
-    <!-- ══════════ DAILY LOG PAGE ══════════ -->
     <div class="page" id="page-daily">
       <section class="card">
         <div class="date-nav">
@@ -171,7 +169,6 @@
         <div id="meal-list"><p class="empty-msg">No meals logged yet today.</p></div>
       </section>
 
-      <!-- DAILY EXTRAS -->
       <section class="card collapsible-card" id="card-extras">
         <div class="collapsible-header" onclick="toggleCardCollapse('extras')">
           <h2>Daily Extras</h2>
@@ -226,7 +223,6 @@
         </div>
       </section>
 
-      <!-- EXERCISE TRACKER -->
       <section class="card collapsible-card" id="card-exercise">
         <div class="collapsible-header" onclick="toggleCardCollapse('exercise')">
           <h2>Exercise Tracker</h2>
@@ -238,7 +234,6 @@
         </div>
       </section>
 
-      <!-- FASTING TRACKER -->
       <section class="card collapsible-card" id="card-fasting">
         <div class="collapsible-header" onclick="toggleCardCollapse('fasting')">
           <h2>Fasting</h2>
@@ -253,7 +248,6 @@
         </div>
       </section>
 
-      <!-- FOOD MODERATOR -->
       <section class="card collapsible-card" id="card-foodmod">
         <div class="collapsible-header" onclick="toggleCardCollapse('foodmod')">
           <h2>Food Moderator</h2>
@@ -270,7 +264,6 @@
 
     </div>
 
-    <!-- ══════════ PROFILE PAGE ══════════ -->
     <div class="page" id="page-profile">
       <section class="card">
         <h2>Your Profile</h2>
@@ -389,7 +382,6 @@
         </div>
       </section>
 
-      <!-- TRENDS & STATS -->
       <section class="card" id="trends-card">
         <div class="trends-header">
           <h2>Trends &amp; Statistics</h2>
@@ -412,13 +404,11 @@
           </div>
         </div>
 
-        <!-- Calories Consumed -->
         <div class="chart-section" id="cs-calories">
           <div class="chart-title">Calories Consumed (kcal)</div>
           <div class="chart-wrap"><canvas id="chart-calories"></canvas></div>
         </div>
 
-        <!-- Macros -->
         <div class="chart-section" id="cs-macros">
           <div class="chart-title-row">
             <span class="chart-title">Macros</span>
@@ -430,7 +420,6 @@
           <div class="chart-wrap" id="macro-chart-wrap"><canvas id="chart-macros"></canvas></div>
         </div>
 
-        <!-- Calories Burnt -->
         <div class="chart-section" id="cs-burnt" style="display:none;">
           <div class="chart-title-row">
             <span class="chart-title">Calories Burnt</span>
@@ -445,26 +434,22 @@
           <div class="chart-wrap"><canvas id="chart-burnt"></canvas></div>
         </div>
 
-        <!-- Weight -->
         <div class="chart-section" id="cs-weight">
           <div class="chart-title">Weight (kg)</div>
           <div class="chart-wrap"><canvas id="chart-weight"></canvas></div>
         </div>
 
-        <!-- Water -->
         <div class="chart-section" id="cs-water" style="display:none;">
           <div class="chart-title">Water (ml)</div>
           <p class="chart-rec" id="rec-water"></p>
           <div class="chart-wrap"><canvas id="chart-water"></canvas></div>
         </div>
 
-        <!-- Steps -->
         <div class="chart-section" id="cs-steps" style="display:none;">
           <div class="chart-title">Steps</div>
           <div class="chart-wrap"><canvas id="chart-steps"></canvas></div>
         </div>
 
-        <!-- Sleep -->
         <div class="chart-section" id="cs-sleep" style="display:none;">
           <div class="chart-title">Sleep (hrs)</div>
           <p class="chart-rec" id="rec-sleep"></p>
@@ -547,7 +532,6 @@
 
   </main>
 
-  <!-- BOTTOM NAV (mobile only) -->
   <nav class="bottom-nav" id="bottom-nav">
     <button class="bottom-nav-btn active" id="bnav-library" onclick="showPage('library', null, 'library')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -563,8 +547,6 @@
     </button>
   </nav>
 
-
-  <!-- EDIT FOOD MODAL -->
   <div id="modal-overlay" class="hidden" onclick="closeModal(event)">
     <div class="modal">
       <h2>Edit Food</h2>
@@ -585,7 +567,6 @@
     </div>
   </div>
 
-  <!-- LOG MEAL MODAL -->
   <div id="log-modal-overlay" class="hidden" onclick="closeLogModal(event)">
     <div class="modal">
       <h2>Log a Meal</h2>
@@ -603,13 +584,12 @@
     </div>
   </div>
 
-  <!-- EDIT MEAL MODAL -->
   <div id="edit-meal-overlay" class="hidden" onclick="closeEditMealModal(event)">
     <div class="modal">
       <h2>Edit Logged Meal</h2>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Changes only apply to this day's log. Your food library is not affected.</p>
       <input type="hidden" id="edit-meal-index" />
-      <!-- Edit Mode Picker -->
+      
       <div class="edit-mode-picker">
         <button class="edit-mode-btn active" id="meal-mode-grams" onclick="setMealEditMode('grams')">
           <span class="mode-label">Edit Grams Only</span>
@@ -636,7 +616,6 @@
     </div>
   </div>
 
-  <!-- CALENDAR MODAL -->
   <div id="cal-overlay" class="hidden" onclick="closeCalendar(event)">
     <div class="cal-modal">
       <div class="cal-header">
@@ -654,7 +633,6 @@
     </div>
   </div>
 
-  <!-- TUTORIAL MODAL -->
   <div id="tutorial-overlay" class="hidden" onclick="closeTutorial(event)">
     <div class="tutorial-modal">
       <div class="tutorial-steps">
@@ -686,10 +664,8 @@
     </div>
   </div>
 
-  <!-- HELP BUTTON -->
   <button class="help-btn" onclick="openTutorial()">?</button>
 
-  <!-- Landscape blocker overlay (mobile only) -->
   <div id="rotate-overlay" aria-hidden="true">
     <div class="rotate-box">
       <div class="rotate-icon">⟳</div>
@@ -697,7 +673,6 @@
     </div>
   </div>
 
-  <!-- ADD EXERCISE MODAL -->
   <div id="add-ex-overlay" class="hidden" onclick="if(event.target===this)closeAddExModal()">
     <div class="modal">
       <h2>Add Exercise</h2>
@@ -722,7 +697,6 @@
     </div>
   </div>
 
-  <!-- EDIT EXERCISE MODAL -->
   <div id="edit-ex-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('edit-ex-overlay').classList.add('hidden')">
     <div class="modal">
       <h2>Edit Exercise</h2>
@@ -737,7 +711,6 @@
     </div>
   </div>
 
-  <!-- FOOD CATEGORY MODAL -->
   <div id="foodcat-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('foodcat-overlay').classList.add('hidden')">
     <div class="modal">
       <h2 id="foodcat-modal-title">Add Food Category</h2>
@@ -758,7 +731,6 @@
     </div>
   </div>
 
-  <!-- EDIT COOLDOWN MODAL -->
   <div id="editcooldown-overlay" class="hidden" onclick="if(event.target===this)document.getElementById('editcooldown-overlay').classList.add('hidden')">
     <div class="modal">
       <h2>Edit Cooldown</h2>
@@ -797,7 +769,6 @@
     </div>
   </div>
 
-  <!-- FASTING SETTINGS MODAL -->
   <div id="fasting-settings-overlay" class="hidden" onclick="if(event.target===this)this.classList.add('hidden')">
     <div class="modal">
       <h2>Fasting Settings</h2>
@@ -827,7 +798,6 @@
     </div>
   </div>
 
-  <!-- FOOD MOD SETTINGS MODAL -->
   <div id="foodmod-settings-overlay" class="hidden" onclick="if(event.target===this)this.classList.add('hidden')">
     <div class="modal">
       <h2>Cooldown Behaviour</h2>
@@ -846,7 +816,6 @@
     </div>
   </div>
 
-  <!-- CHART SETTINGS MODAL -->
   <div id="chart-settings-overlay" class="hidden" onclick="if(event.target===this)this.classList.add('hidden')">
     <div class="modal">
       <h2>Chart Settings</h2>
@@ -880,7 +849,7 @@
        <p class="footer-github">Visit <a href="https://neushimo.com/eatshimo?utm_source=eatshimo" target="_blank">neushimo.com</a> for updates</p>
     <p>©2026 Neo Antonio</p>
     <p>All rights reserved.</p>
-    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v4.21</p>
+    <p style="font-size:11px;color:#b0b5be;margin-top:2px;">eatshimo v4.2</p>
   </footer>
 
 <style>

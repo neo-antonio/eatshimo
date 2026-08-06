@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap');
 
-/* ─── RESET & BASE ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -38,7 +37,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ─── HEADER ─── */
 header {
   padding: 16px 24px;
   background: var(--header-bg);
@@ -66,7 +64,6 @@ header {
 .tagline a { color: rgba(255,255,255,0.75); font-weight: 500; text-decoration: none; }
 .tagline a:hover { color: #ffffff; }
 
-/* ─── NAV ─── */
 nav { display: flex; gap: 6px; flex-shrink: 0; }
 
 .nav-tab {
@@ -87,7 +84,6 @@ nav { display: flex; gap: 6px; flex-shrink: 0; }
 .nav-tab:hover { background: rgba(255,255,255,0.1); color: #ffffff; box-shadow: none; opacity: 1; border-color: rgba(255,255,255,0.25); }
 .nav-tab.active { background: #ffffff; color: #23272f; border-color: #ffffff; font-weight: 700; }
 
-/* ─── MAIN ─── */
 main {
   max-width: 680px;
   margin: 0 auto;
@@ -106,7 +102,6 @@ main {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── CARD ─── */
 .card {
   background: var(--card);
   border: 1.5px solid var(--border);
@@ -117,7 +112,6 @@ main {
 
 .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text); letter-spacing: 0.2px; }
 
-/* ─── FORM ─── */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 .field { display: flex; flex-direction: column; gap: 5px; }
 .field.full { grid-column: 1 / -1; }
@@ -162,7 +156,6 @@ select {
 select:focus { border-color: var(--border); outline: none; }
 select option { background: var(--surface); color: var(--text); }
 
-/* ─── BUTTONS ─── */
 button {
   background: var(--border);
   color: #ffffff;
@@ -192,7 +185,6 @@ button:active { transform: scale(0.97); }
 
 #save-btn { width: 100%; padding: 12px; font-size: 15px; border-radius: 10px; margin-top: 4px; background: var(--border); color: #ffffff; }
 
-/* ─── LIBRARY ─── */
 .library-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .library-header h2 { margin-bottom: 0; }
 #search-input { width: 140px; padding: 8px 11px; font-size: 13px; }
@@ -201,7 +193,6 @@ button:active { transform: scale(0.97); }
 .empty-msg { color: var(--text-dim); font-size: 13px; text-align: center; padding: 28px 0; }
 .card-desc { color: var(--text-dim); font-size: 13px; line-height: 1.5; padding: 4px 0 8px; }
 
-/* ─── LIBRARY VIEW ALL ─── */
 .library-view-all {
   margin-top: 4px;
   text-align: center;
@@ -219,7 +210,6 @@ button:active { transform: scale(0.97); }
 }
 .btn-view-all:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
 
-/* ─── EDIT FOOD MODES ─── */
 .edit-mode-picker {
   display: flex;
   gap: 0;
@@ -286,7 +276,6 @@ button:active { transform: scale(0.97); }
 .btn-delete { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(240,95,95,0.2); box-shadow: none; }
 .btn-delete:hover { background: rgba(240,95,95,0.18); box-shadow: none; opacity: 1; }
 
-/* ─── PRESETS ─── */
 .btn-presets { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); padding: 7px 13px; font-size: 12px; font-weight: 500; border-radius: 7px; box-shadow: none; white-space: nowrap; }
 .btn-presets:hover { background: var(--accent-dim); opacity:1; box-shadow: none; opacity: 1; }
 
@@ -307,11 +296,9 @@ button:active { transform: scale(0.97); }
 .btn-add-preset:hover { background: rgba(51,56,64,0.12); box-shadow: none; opacity: 1; }
 .btn-add-preset:disabled { opacity: 0.4; cursor: default; }
 
-/* ─── ASK AI ─── */
 .btn-ai-estimate { background: var(--border); color: #fff; border: none; border-radius: 8px; padding: 0 14px; font-size: 13px; font-weight: 700; white-space: nowrap; box-shadow: none; flex-shrink: 0; font-family:'Ubuntu',sans-serif; height: 42px; }
 .btn-ai-estimate:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
 
-/* ─── DATE NAV ─── */
 .date-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .date-nav > button { background: var(--surface); color: var(--text-mid); border: 1px solid var(--border); padding: 8px 14px; font-size: 20px; border-radius: 8px; box-shadow: none; line-height: 1; -webkit-tap-highlight-color: transparent; }
 .date-nav > button:hover { background: var(--border); color: #ffffff; box-shadow: none; opacity: 1; }
@@ -324,7 +311,6 @@ button:active { transform: scale(0.97); }
 .btn-edit-goal:hover { background: rgba(51,56,64,0.10); box-shadow: none; opacity: 1; }
 .date-actions .btn-edit-goal { padding: 8px 18px; font-size: 13px; }
 
-/* ─── SUMMARY ─── */
 .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
 .summary-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
 .stat-val { font-size: 16px; font-weight: 700; color: var(--text); display: block; line-height: 1.2; }
@@ -336,7 +322,6 @@ button:active { transform: scale(0.97); }
 .calorie-label { font-size: 12px; color: var(--text-dim); text-align: center; }
 .calorie-label a { text-decoration: none; font-weight: 600; color: var(--text); }
 
-/* ─── MEALS ─── */
 .log-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .log-header h2 { margin-bottom: 0; }
 .btn-log-food { background: var(--border); color: #ffffff; border: none; padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 8px; font-family:'Ubuntu',sans-serif; }
@@ -357,7 +342,6 @@ button:active { transform: scale(0.97); }
 .btn-remove-meal { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(240,95,95,0.2); padding: 5px 10px; font-size: 11px; font-weight: 500; border-radius: 6px; box-shadow: none; font-family:'Ubuntu',sans-serif; }
 .btn-remove-meal:hover { background: rgba(240,95,95,0.18); box-shadow: none; opacity: 1; }
 
-/* ─── EXTRAS ─── */
 .extras-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .extra-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; gap: 7px; }
 .extra-label { font-size: 12px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
@@ -371,7 +355,6 @@ button:active { transform: scale(0.97); }
 .steps-count-row { display: flex; align-items: baseline; gap: 6px; }
 .steps-burned { font-size: 11px; color: var(--success); font-weight: 600; }
 
-/* ─── PROFILE ─── */
 .section-divider { font-size: 11px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 18px 0 12px; display: flex; align-items: center; gap: 8px; }
 .section-divider span { font-weight: 400; text-transform: none; letter-spacing: 0; font-style: italic; }
 .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
@@ -388,13 +371,11 @@ button:active { transform: scale(0.97); }
 .btn-tdee-set:hover { background: var(--accent-dim); opacity:1; box-shadow: none; opacity: 1; }
 .tdee-current { font-size: 12px; color: var(--text-dim); text-align: center; padding-top: 4px; font-style: italic; }
 
-/* ─── CHARTS ─── */
 .chart-section { margin-bottom: 24px; }
 .chart-section:last-child { margin-bottom: 0; }
 .chart-title { font-size: 11px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
 .chart-wrap { height: 170px; position: relative; }
 
-/* ─── CALORIE GOAL IN PROFILE ─── */
 .calorie-goal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .calorie-goal-row input { flex: 1; }
 .calorie-goal-row button { flex-shrink: 0; white-space: nowrap; }
@@ -403,7 +384,6 @@ button:active { transform: scale(0.97); }
 .btn-danger-full { width: 100%; background: var(--danger); color: #fff; border: none; padding: 11px; font-size: 14px; font-weight: 700; border-radius: 8px; font-family:'Ubuntu',sans-serif; }
 .btn-danger-full:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
 
-/* ─── MODALS ─── */
 #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
 #add-ex-overlay, #edit-ex-overlay,
 #foodcat-overlay, #editcooldown-overlay,
@@ -427,7 +407,6 @@ button:active { transform: scale(0.97); }
 .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
 .modal-actions button { flex: 1; }
 
-/* ─── LOG MODAL ─── */
 .food-pick-list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .food-pick-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
 .food-pick-item:hover { border-color: var(--border-lite); background: var(--accent-dim); }
@@ -440,7 +419,6 @@ button:active { transform: scale(0.97); }
 .macro-preview { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px; display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-dim); min-height: 38px; align-items: center; }
 .macro-preview span { color: var(--text); font-weight: 700; }
 
-/* ─── CALENDAR ─── */
 #cal-overlay { z-index: 200; }
 .cal-modal { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; width: 100%; max-width: 310px; box-shadow: var(--shadow); }
 .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -459,7 +437,6 @@ button:active { transform: scale(0.97); }
 .cal-day.future:hover { background: transparent; }
 .cal-day.has-data::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--accent2); }
 
-/* ─── TUTORIAL ─── */
 #tutorial-overlay { z-index: 300; }
 .tutorial-modal { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px 22px; width: 100%; max-width: 400px; box-shadow: var(--shadow); }
 .tutorial-step { display: none; text-align: center; }
@@ -474,7 +451,6 @@ button:active { transform: scale(0.97); }
 .tutorial-actions { display: flex; justify-content: space-between; gap: 10px; }
 .tutorial-actions button { flex: 1; }
 
-/* ─── HELP BUTTON ─── */
 .help-btn {
   position: fixed; bottom: 20px; right: 20px;
   width: 42px; height: 42px; min-height: unset; border-radius: 50%;
@@ -488,16 +464,14 @@ button:active { transform: scale(0.97); }
 }
 .help-btn:hover { transform: scale(1.08); border-color: transparent; box-shadow: 0 6px 20px rgba(0,0,0,0.4); opacity: 1; }
 
-/* ─── FOOTER ─── */
 footer { background: var(--bg); border-top: none; padding: 10px 32px 24px; text-align: center; }
 footer p { font-size: 12px; color: var(--text-dim); line-height: 1.8; }
 .footer-github { margin-top: 4px; }
 .footer-github a { color: var(--text-mid); text-decoration: none; font-weight: 500; }
 .footer-github a:hover { color: var(--text); text-decoration: none; }
-/* Hide the "stored locally" text on mobile */
+
 .footer-local { display: block; }
 
-/* ─── SAFE AREA (notches, home bar) ─── */
 header {
   padding-left: max(24px, env(safe-area-inset-left));
   padding-right: max(24px, env(safe-area-inset-right));
@@ -512,10 +486,8 @@ footer {
   padding-right: max(32px, env(safe-area-inset-right));
 }
 
-/* ─── CALORIES BURNED ─── */
 .steps-burned { font-size: 10px; color: var(--success); font-weight: 500; margin-top: -4px; }
 
-/* ─── BOTTOM NAV (mobile) ─── */
 .bottom-nav {
   display: none;
   position: fixed;
@@ -550,7 +522,6 @@ footer {
 .bottom-nav-btn.active { color: #ffffff; opacity: 1; box-shadow: none; }
 .bottom-nav-btn svg { width: 22px; height: 22px; }
 
-/* ─── TABLET (601–900px) ─── */
 @media (min-width: 601px) and (max-width: 900px) {
   main { max-width: 100%; padding: 20px 24px 24px; }
   .summary-grid { grid-template-columns: repeat(4, 1fr); }
@@ -558,9 +529,8 @@ footer {
   .extras-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ─── MOBILE (≤600px) ─── */
 @media (max-width: 600px) {
-  /* Header — hide top nav, show bottom nav */
+  
   header { padding: 12px 14px; gap: 10px; justify-content: center; }
   .logo { font-size: 18px; text-align: center; }
   .tagline { display: none; }
@@ -570,7 +540,6 @@ footer {
   main { padding: 14px 12px 16px; gap: 14px; }
   .card { padding: 16px 14px; }
 
-  /* Touch targets — min 44px */
   button:not(.help-btn), .nav-tab, .bottom-nav-btn,
   input[type="text"], input[type="number"], select { min-height: 44px; }
   .btn-edit, .btn-delete, .btn-edit-meal, .btn-remove-meal { min-height: 38px; }
@@ -578,7 +547,6 @@ footer {
   .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .stat-val { font-size: 15px; }
 
-  /* 2x2 grid on mobile */
   .extras-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .extra-card { padding: 12px 10px; }
 
@@ -599,7 +567,6 @@ footer {
   .meal-item { flex-wrap: wrap; }
   .meal-item-actions { flex-direction: row; width: 100%; justify-content: flex-end; margin-top: 6px; }
 
-  /* Modals — slide up from bottom on mobile */
   #modal-overlay, #log-modal-overlay, #edit-meal-overlay, #cal-overlay, #tutorial-overlay,
   #add-ex-overlay, #edit-ex-overlay,
   #foodcat-overlay, #editcooldown-overlay,
@@ -622,10 +589,8 @@ footer {
 
   .footer-local { display: none; }
 
-  /* Help button above bottom nav */
   .help-btn { bottom: calc(70px + max(8px, env(safe-area-inset-bottom)) + 12px); right: 16px; width: 38px; height: 38px; font-size: 16px; }
 
-  /* Fix question mark button - prevent stretch */
   .help-btn { flex-shrink: 0; }
 }
 
@@ -643,7 +608,6 @@ footer {
   }
 }
 
-/* ─── THEME PICKER ─── */
 .theme-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -688,13 +652,11 @@ footer {
   .theme-label { font-size: 9px; }
 }
 
-/* ─── COLLAPSIBLE CARDS ─── */
 .collapsible-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
 .collapsible-header h2 { margin-bottom: 0; }
 .collapse-chevron { font-size: 11px; color: var(--text-dim); flex-shrink: 0; padding: 2px 4px; }
 .collapsible-body { margin-top: 14px; }
 
-/* ─── EXERCISE TRACKER (see horizontal-scroll rules further below) ─── */
 .btn-add-card-item { width: 100%; margin-top: 12px; background: var(--accent-dim); color: var(--text); border: 1px solid var(--input-border); box-shadow: none; font-size: 13px; font-weight: 500; }
 .btn-add-card-item:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
 .card-btn-row { display: flex; gap: 8px; margin-top: 12px; }
@@ -702,7 +664,6 @@ footer {
 .btn-once { background: transparent; border: 1px dashed var(--border-lite); color: var(--text-mid); }
 .btn-once:hover { background: var(--accent-dim); color: var(--text); border-color: var(--border); }
 
-/* ─── RECURRENCE SECTION ─── */
 .rec-section { display: flex; flex-direction: column; gap: 10px; margin-top: 2px; }
 .rec-row { display: flex; flex-direction: column; gap: 6px; }
 .rec-label { font-size: 12px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .05em; }
@@ -711,11 +672,6 @@ footer {
 .interval-input:focus { outline: none; border-color: var(--border); box-shadow: 0 0 0 3px var(--accent-dim); }
 .interval-unit { font-size: 13px; color: var(--text-mid); font-weight: 500; }
 
-/* Add exercise modal chips */
-/* (legacy ex-preset-btn / ex-active-btn rules removed — presets no longer used) */
-
-
-/* ─── TOGGLE SWITCH (Profile) ─── */
 .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .toggle-info { flex: 1; }
 .toggle-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
@@ -727,7 +683,6 @@ footer {
 .toggle-switch input:checked + .toggle-slider { background: var(--border); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
 
-/* ─── EXERCISE TRACKER (full-width rows, styled like Food Moderator items) ─── */
 .ex-list-scroll { display: flex; flex-direction: column; margin-bottom: 12px; }
 .ex-list-scroll:empty { margin-bottom: 0; }
 .ex-item {
@@ -746,7 +701,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 .btn-ex-settings { flex-shrink: 0; background: var(--accent-dim); color: var(--text-mid); border: 1px solid var(--input-border); border-radius: 7px; padding: 5px 10px; font-size: 13px; box-shadow: none; line-height: 1; }
 .btn-ex-settings:hover { background: var(--border); color: #fff; opacity: 1; box-shadow: none; }
 
-/* ─── SAVED EXERCISE PICKER (Add Exercise Modal) ─── */
 .ex-lib-picker { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
 .ex-lib-chip {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex-shrink: 0; white-space: nowrap;
@@ -757,7 +711,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 .ex-lib-chip-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
 .ex-lib-chip-cals { font-size: 11px; color: var(--text-dim); }
 
-/* ─── ASK AI BUTTON (Add Exercise Modal) ─── */
 .ask-ai-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
@@ -774,7 +727,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 }
 .btn-ask-ai:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
 
-/* ─── PORTRAIT LOCK OVERLAY ─── */
 #rotate-overlay {
   display: none;
   position: fixed; inset: 0; z-index: 9999;
@@ -802,7 +754,7 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 @media (orientation: landscape) and (max-width: 900px) {
   #rotate-overlay { display: flex; }
 }
-/* ─── DELETE OPTIONS PANEL ─── */
+
 .delete-panel {
   margin-top: 14px; padding: 14px; border-radius: 10px;
   background: var(--danger-dim); border: 1px solid rgba(192,82,58,0.2);
@@ -822,7 +774,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 }
 .btn-delete-cancel:hover { color: var(--text); opacity: 1; box-shadow: none; }
 
-/* ─── FASTING TRACKER ─── */
 .fasting-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .fast-preset-btn { background: var(--bg); color: var(--text-mid); border: 1.5px solid var(--input-border); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; box-shadow: none; transition: all 0.12s; }
 .fast-preset-btn.active { background: var(--border); border-color: var(--border); color: #fff; }
@@ -847,7 +798,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 .cooldown-adjust-row { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
 .cooldown-adjust-group { display: flex; flex-direction: column; gap: 6px; }
 
-/* ─── FOOD MODERATOR ─── */
 .foodmod-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .foodmod-setting-label { font-size: 13px; font-weight: 500; color: var(--text-mid); }
 .foodmod-setting-row select { font-size: 12px; padding: 6px 10px; border-radius: 8px; }
@@ -877,7 +827,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 }
 .foodcat-chip .chip-remove:hover { background: rgba(255,255,255,0.45); }
 
-/* ─── TRENDS & STATISTICS ─── */
 .trends-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .trends-header h2 { margin-bottom: 0; flex-shrink: 0; }
 .trends-tab-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -914,7 +863,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 .chart-rec { font-size: 12px; color: var(--text-dim); margin: 0 0 8px; line-height: 1.5; }
 .chart-rec strong { color: var(--text); }
 
-/* ─── HEATMAPS ─── */
 .heatmap-legend { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; font-size: 11px; color: var(--text-dim); }
 .hm-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid var(--input-border); flex-shrink: 0; }
 .hm-swatch.hm-none { background: transparent; }
@@ -930,7 +878,6 @@ input.ex-input:focus { outline: none; border-color: var(--border); box-shadow: 0
 .hm-cell.hm-fail-x { font-size: 7px; }
 .heatmap-rate { font-size: 12px; color: var(--text-dim); margin-top: 8px; font-weight: 500; }
 
-/* ─── CHART SETTINGS MODAL ─── */
 .chart-settings-list { display: flex; flex-direction: column; gap: 10px; }
 .chart-setting-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); cursor: pointer; }
 .chart-setting-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--border); cursor: pointer; flex-shrink: 0; }
